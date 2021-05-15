@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+.chart-container {
+  max-width: 800px;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<h1>TINIEST (This Is Not If Even Slightly Thorough) Electricity Model</h1>
+<div class="chart-container">
+  <canvas id="outputChart"></canvas>
+</div>
+<script>
+
+var inputs = {
+  num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
+  num_tiny_steps: 100, //This will be the tiny time steps within the larger time steps
+  start_year: 2020,
+  end_year: 2050,
+  load: [4011, 4363, 4764, 5317], //TWh
+  full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind', 'PV', 'Other'],
+  colors: {
+    Nuclear: '#820000',
+    Coal: '#222222',
+    Gas_CC: '#52216B',
+    Gas_CCS: '#5E1688',
+    Wind: '#00B6EF',
+    PV: '#FFC903',
+    Other: '#ff69b4',
+  },
+  existing_gen: { //TWh of init, new1 and new2 techs, from reference run
+    Nuclear: [770, 719, 598, 377],
+    Coal: [722, 898, 734, 425],
+    Gas_CC: [1570, 964, 695, 403], //Included gas_CT
+    Gas_CCS: [0, 0, 0, 0],
+    Wind: [372, 370, 270, 0], //onshore plus offshore. note that all wind is gone before 2050.
+    PV: [171, 195, 227, 135], //upv, dupv, distpv. I included distributed pv growth here as exogenous
+    Other: [406, 396, 387, 377], //bio, canada, csp, geo, hydro, lfill_gas, o_g_s, corrected to equal load in 2020 tho...
+  },
+  LCOE_new: { //2018$/MWh, ATB 2020 Moderate
+    Nuclear: [75, 73, 70, 66],
+    Coal: [72, 70, 69, 67], //High CF
+    Gas_CC: [28, 34, 35, 36], //High CF
+    Gas_CCS: [49, 53, 53, 54], //High CF
+    Wind: [31, 24, 22, 19], //class 4
+    PV: [31, 18, 16, 14], //Kansas City
+  },
+  value_factor: { //Slope and y-intercept, based on reeds results.
+    Nuclear: [-.40, 1.04],
+    Coal: [-.40, 1.04], //copied from nuclear
+    Gas_CC: [-0.85, 1.3],
+    Gas_CCS: [-0.27, 0.98],
+    Wind: [-0.81, 0.78],
+    PV: [-1.33, 0.9],
+  },
+};
+
+//Output Chart. Start with existing gen here so that we can update as we go
+existing_gen_datasets = []
+for (var tech of inputs.full_techs){
+  existing_gen_datasets.push({
+    label: tech,
+    data: [inputs.existing_gen[tech][0]],
+    borderColor: inputs.colors[tech],
+    backgroundColor: inputs.colors[tech],
+  });
+}
+
+var data_out = {
+  labels: [inputs.start_year],
+  datasets: existing_gen_datasets,
+};
+var config_out = {
+  type: 'bar',
+  data: data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        stacked: true,
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        stacked: true,
+      },
+    },
+  },
+};
+var outChart = new Chart(
+  document.getElementById('outputChart'),
+  config_out,
+);
+
+//Execute TINIEST!
+//First initialize some things
+var years = []
+for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
+  years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1))
+}
+var gen_new = {}
+var gen_exist = {};
+for(var tech in inputs.existing_gen){
+  gen_exist[tech] = inputs.existing_gen[tech][0];
+  gen_new[tech] = 0;
+}
+var tot_gen_new = 0;
+var tot_load = inputs.load[0];
+
+for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
+  for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
+    var first_tech = true;
+    var PLCOE_min, tech_min;
+    for(var tech in inputs.LCOE_new){
+      //Use last step's penetration for value factor calculation
+      var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
+      //calculate value factor at this penetration, y=mx + b
+      var value_factor = Math.max(0.00001, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+      //Get LCOE for this time step
+      var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+      //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
+      var PLCOE = LCOE/value_factor;
+      if (first_tech == true){
+        PLCOE_min = PLCOE;
+        tech_min = tech;
+        first_tech = false;
+      } else if (PLCOE < PLCOE_min){
+        PLCOE_min = PLCOE;
+        tech_min = tech;
+      }
+    }
+    //grow load for this time step
+    var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
+    //Get existing gen by tech and total existing gen
+    var tot_gen_exist = 0;
+    for(var tech in inputs.existing_gen){
+      gen_exist[tech] = inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps;
+      tot_gen_exist += gen_exist[tech];
+    }
+    //Now fill the shortfall in generation with the tech with the lowest LCOE
+    gen_new[tech_min] += tot_load - tot_gen_exist - tot_gen_new;
+    //Update tot_gen_new
+    tot_gen_new = tot_load - tot_gen_exist;
+    //now update the chart data if we are on the year
+    var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
+    if (year % 1 == 0){
+      outChart.data.labels.push(year);
+      for(var n = 0; n < inputs.full_techs.length; n++){
+        outChart.data.datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
+      }
+    }
+  }
+}
+outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+</script>
+</body>
+</html>
