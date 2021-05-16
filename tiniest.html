@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
 <style>
-.chart-container {
+.chart-container,
+#inputs {
   max-width: 800px;
 }
 </style>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<h1>TINIEST (This Is Not If Even Slightly Thorough) Electricity Model</h1>
+<h2>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h2>
 <div class="chart-container">
   <canvas id="outputChart"></canvas>
 </div>
-<script>
+<form id="inputs">
+  <h3>New Technology Levelized cost of electricity (LCOE) (2018$/MWh)</h3>
+  <table id="LCOE_new-table" class="table table-sm table-striped">
+    <tr id="LCOE_new-header"><th>Tech</th></tr>
+  </table>
+</form>
 
+<script>
 var inputs = {
   num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
   num_tiny_steps: 100, //This will be the tiny time steps within the larger time steps
@@ -58,6 +67,24 @@ var inputs = {
     PV: [-1.33, 0.9],
   },
 };
+
+var years = []
+for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
+  years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
+}
+
+for (var year of years){
+  $('#LCOE_new-header').append('<th>' + year + '</th>');
+}
+for (var tech of inputs.full_techs){
+  if (!(tech in inputs.LCOE_new)){continue;}
+  var lcoe_new_str = '<tr><td>' + tech + '</td>';
+  for (var i = 0; i < inputs.num_time_steps; i++){
+    lcoe_new_str += '<td><input type="text" id="LCOE_new-' + tech + '_' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+  }
+  lcoe_new_str += '</tr>';
+  $('#LCOE_new-table').append(lcoe_new_str);
+}
 
 //Output Chart. Start with existing gen here so that we can update as we go
 existing_gen_datasets = []
@@ -103,10 +130,6 @@ var outChart = new Chart(
 
 //Execute TINIEST!
 //First initialize some things
-var years = []
-for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
-  years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1))
-}
 var gen_new = {}
 var gen_exist = {};
 for(var tech in inputs.existing_gen){
@@ -124,7 +147,7 @@ for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of
       //Use last step's penetration for value factor calculation
       var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
       //calculate value factor at this penetration, y=mx + b
-      var value_factor = Math.max(0.00001, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+      var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
       //Get LCOE for this time step
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
       //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
