@@ -13,14 +13,18 @@
 </head>
 <body>
 
-<h2>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h2>
+<h3>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h3>
 <div class="chart-container">
   <canvas id="outputChart"></canvas>
 </div>
 <form id="inputs">
-  <h3>New Technology Levelized cost of electricity (LCOE) (2018$/MWh)</h3>
+  <h5>New Technology Levelized cost of electricity (LCOE) (2018$/MWh)</h5>
   <table id="LCOE_new-table" class="table table-sm table-striped">
     <tr id="LCOE_new-header"><th>Tech</th></tr>
+  </table>
+  <h5>Value factor vs penetration</h5>
+  <table id="value_factor-table" class="table table-sm table-striped">
+    <tr id="value_factor-header"><th>Tech</th><th>Slope</th><th>Intercept</th></tr>
   </table>
 </form>
 
@@ -78,12 +82,20 @@ for (var year of years){
 }
 for (var tech of inputs.full_techs){
   if (!(tech in inputs.LCOE_new)){continue;}
+  //New tech LCOE
   var lcoe_new_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
     lcoe_new_str += '<td><input type="text" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
   }
   lcoe_new_str += '</tr>';
   $('#LCOE_new-table').append(lcoe_new_str);
+  //Value Factor
+  var vf_str = '<tr><td>' + tech + '</td>';
+  for (var i = 0; i < 2; i++){
+    vf_str += '<td><input type="text" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
+  }
+  vf_str += '</tr>';
+  $('#value_factor-table').append(vf_str);
 }
 
 //Output Chart. Start with existing gen here so that we can update as we go
