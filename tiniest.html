@@ -80,7 +80,7 @@ for (var tech of inputs.full_techs){
   if (!(tech in inputs.LCOE_new)){continue;}
   var lcoe_new_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
-    lcoe_new_str += '<td><input type="text" id="LCOE_new-' + tech + '_' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+    lcoe_new_str += '<td><input type="text" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
   }
   lcoe_new_str += '</tr>';
   $('#LCOE_new-table').append(lcoe_new_str);
@@ -128,62 +128,74 @@ var outChart = new Chart(
   config_out,
 );
 
-//Execute TINIEST!
-//First initialize some things
-var gen_new = {}
-var gen_exist = {};
-for(var tech in inputs.existing_gen){
-  gen_exist[tech] = inputs.existing_gen[tech][0];
-  gen_new[tech] = 0;
-}
-var tot_gen_new = 0;
-var tot_load = inputs.load[0];
+function runTiniest() {
 
-for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
-  for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
-    var first_tech = true;
-    var PLCOE_min, tech_min;
-    for(var tech in inputs.LCOE_new){
-      //Use last step's penetration for value factor calculation
-      var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
-      //calculate value factor at this penetration, y=mx + b
-      var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
-      //Get LCOE for this time step
-      var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
-      //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
-      var PLCOE = LCOE/value_factor;
-      if (first_tech == true){
-        PLCOE_min = PLCOE;
-        tech_min = tech;
-        first_tech = false;
-      } else if (PLCOE < PLCOE_min){
-        PLCOE_min = PLCOE;
-        tech_min = tech;
+  //First initialize some things
+  var year_labels = [inputs.start_year];
+  var tech_gen_datasets = JSON.parse(JSON.stringify(existing_gen_datasets)); //Deep copy
+  var gen_new = {}
+  var gen_exist = {};
+  for(var tech in inputs.existing_gen){
+    gen_exist[tech] = inputs.existing_gen[tech][0];
+    gen_new[tech] = 0;
+  }
+  var tot_gen_new = 0;
+  var tot_load = inputs.load[0];
+
+  for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
+    for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
+      var first_tech = true;
+      var PLCOE_min, tech_min;
+      for(var tech in inputs.LCOE_new){
+        //Use last step's penetration for value factor calculation
+        var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
+        //calculate value factor at this penetration, y=mx + b
+        var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+        //Get LCOE for this time step
+        var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+        //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
+        var PLCOE = LCOE/value_factor;
+        if (first_tech == true){
+          PLCOE_min = PLCOE;
+          tech_min = tech;
+          first_tech = false;
+        } else if (PLCOE < PLCOE_min){
+          PLCOE_min = PLCOE;
+          tech_min = tech;
+        }
       }
-    }
-    //grow load for this time step
-    var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
-    //Get existing gen by tech and total existing gen
-    var tot_gen_exist = 0;
-    for(var tech in inputs.existing_gen){
-      gen_exist[tech] = inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps;
-      tot_gen_exist += gen_exist[tech];
-    }
-    //Now fill the shortfall in generation with the tech with the lowest LCOE
-    gen_new[tech_min] += tot_load - tot_gen_exist - tot_gen_new;
-    //Update tot_gen_new
-    tot_gen_new = tot_load - tot_gen_exist;
-    //now update the chart data if we are on the year
-    var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
-    if (year % 1 == 0){
-      outChart.data.labels.push(year);
-      for(var n = 0; n < inputs.full_techs.length; n++){
-        outChart.data.datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
+      //grow load for this time step
+      var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
+      //Get existing gen by tech and total existing gen
+      var tot_gen_exist = 0;
+      for(var tech in inputs.existing_gen){
+        gen_exist[tech] = inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps;
+        tot_gen_exist += gen_exist[tech];
+      }
+      //Now fill the shortfall in generation with the tech with the lowest LCOE
+      gen_new[tech_min] += tot_load - tot_gen_exist - tot_gen_new;
+      //Update tot_gen_new
+      tot_gen_new = tot_load - tot_gen_exist;
+      //now update the chart data if we are on the year
+      var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
+      if (year % 1 == 0){
+        year_labels.push(year);
+        for(var n = 0; n < inputs.full_techs.length; n++){
+          tech_gen_datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
+        }
       }
     }
   }
+  outChart.data.labels = year_labels;
+  outChart.data.datasets = tech_gen_datasets;
+  outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
 }
-outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+runTiniest();
+$('input').change(function(){
+  arr = $(this).attr('id').split('-');
+  inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+  runTiniest();
+});
 </script>
 </body>
 </html>
