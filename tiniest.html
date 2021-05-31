@@ -185,6 +185,13 @@ function runTiniest() {
 
   for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
     for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
+      var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
+      //Calculate carbon price
+      var CO2_price = 0;
+      if(year >= inputs.CO2_price.start_year){
+        CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
+      }
+      //Calculate PLCOE for the best new resource
       var first_tech = true;
       var PLCOE_min, tech_min;
       for(var tech in inputs.LCOE_new){
@@ -194,8 +201,9 @@ function runTiniest() {
         var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
         //Get LCOE for this time step
         var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+        var CO2_cost = CO2_price * inputs.CO2_emission[tech];
         //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
-        var PLCOE = LCOE/value_factor;
+        var PLCOE = (LCOE + CO2_cost)/value_factor;
         if (first_tech == true){
           PLCOE_min = PLCOE;
           tech_min = tech;
@@ -235,8 +243,9 @@ function runTiniest() {
           var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
           //Get LCOE for this time step
           var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+          var CO2_cost = CO2_price * inputs.CO2_emission[tech];
           //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
-          var PLCOE = LCOE/value_factor;
+          var PLCOE = (LCOE + CO2_cost)/value_factor;
           if (first_tech == true){
             PLCOE_min = PLCOE;
             tech_min = tech;
@@ -256,8 +265,9 @@ function runTiniest() {
           var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
           //Get LCOE for this time step
           var LCOE_exist = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
+          var CO2_cost = CO2_price * inputs.CO2_emission[tech];
           //Calculate PLCOE and keep track of the max PLCOE and corresponding tech.
-          var PLCOE_exist = LCOE_exist/value_factor;
+          var PLCOE_exist = (LCOE_exist + CO2_cost)/value_factor;
           if (first_tech == true){
             PLCOE_exist_max = PLCOE_exist;
             tech_exist_max = tech;
@@ -283,7 +293,6 @@ function runTiniest() {
         }
       } while(PLCOE_exist_max > PLCOE_min);
       //now update the chart data if we are on the year
-      var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
       if (year % 1 == 0){
         year_labels.push(year);
         for(var n = 0; n < inputs.full_techs.length; n++){
