@@ -210,13 +210,78 @@ function runTiniest() {
       //Get existing gen by tech and total existing gen
       var tot_gen_exist = 0;
       for(var tech in inputs.existing_gen){
-        gen_exist[tech] = inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps;
+        //Take minimum of generation as determined by forced retirements and current gen_exist, which could be lower because of endogenous retirements.
+        gen_exist[tech] = Math.min(gen_exist[tech], inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps);
         tot_gen_exist += gen_exist[tech];
       }
       //Now fill the shortfall in generation with the tech with the lowest LCOE
-      gen_new[tech_min] += tot_load - tot_gen_exist - tot_gen_new;
+      var shortfall = tot_load - tot_gen_exist - tot_gen_new;
+      gen_new[tech_min] += shortfall;
       //Update tot_gen_new
       tot_gen_new = tot_load - tot_gen_exist;
+
+      //If any existing tech has higher PLCOE than the lowest PLCOE of new techs, we will retire the existing gen,
+      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest PLCOE and removing the
+      //existing tech with highest PLCOE.
+      var PLCOE_exist_max, tech_exist_max;
+      do {
+        //Calculate new tech PLCOE, copied from above and find PLCOE_min
+        //TODO: refactor so as not to repeat code and optimize
+        for(var tech in inputs.LCOE_new){
+          //Use last step's penetration for value factor calculation
+          var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
+          //calculate value factor at this penetration, y=mx + b
+          var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+          //Get LCOE for this time step
+          var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+          //Calculate PLCOE and keep track of the minimum PLCOE and corresponding tech.
+          var PLCOE = LCOE/value_factor;
+          if (first_tech == true){
+            PLCOE_min = PLCOE;
+            tech_min = tech;
+            first_tech = false;
+          } else if (PLCOE < PLCOE_min){
+            PLCOE_min = PLCOE;
+            tech_min = tech;
+          }
+        }
+        //Find the existing tech with the highest PLCOE.
+        first_tech = true;
+        for(var tech in inputs.LCOE_exist){
+          if(gen_new[tech] + gen_exist[tech] <= 0) { continue;}
+          //Use last step's penetration for value factor calculation
+          var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
+          //calculate value factor at this penetration, y = mx + b
+          var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+          //Get LCOE for this time step
+          var LCOE_exist = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
+          //Calculate PLCOE and keep track of the max PLCOE and corresponding tech.
+          var PLCOE_exist = LCOE_exist/value_factor;
+          if (first_tech == true){
+            PLCOE_exist_max = PLCOE_exist;
+            tech_exist_max = tech;
+            first_tech = false;
+          } else if (PLCOE_exist > PLCOE_exist_max){
+            PLCOE_exist_max = PLCOE_exist;
+            tech_exist_max = tech;
+          }
+        }
+        //if existing PLCOE is higher than lowest new PLCOE, make the trade, based on shortfall:
+        if(PLCOE_exist_max > PLCOE_min){
+          var trade_energy = shortfall;
+          if(gen_exist[tech_exist_max] > 0){
+            //If we have less than shortfall of existing tech gen, use that remainder as the trade amount.
+            trade_energy = Math.min(gen_exist[tech_exist_max], shortfall);
+            gen_exist[tech_exist_max] -= trade_energy;
+            tot_gen_exist -= trade_energy;
+            tot_gen_new += trade_energy;
+          } else{
+            trade_energy = Math.min(gen_new[tech_exist_max], shortfall);
+            gen_new[tech_exist_max] -= trade_energy;
+          }
+          gen_new[tech_min] += trade_energy;
+        }
+      } while(PLCOE_exist_max > PLCOE_min);
       //now update the chart data if we are on the year
       var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
       if (year % 1 == 0){
