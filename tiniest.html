@@ -62,6 +62,22 @@ var inputs = {
     Wind: [31, 24, 22, 19], //class 4
     PV: [31, 18, 16, 14], //Kansas City
   },
+  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs
+    Nuclear: [24, 24, 24, 24],
+    Coal: [30, 29, 29, 29],
+    Gas_CC: [22, 28, 29, 30],
+    Gas_CCS: [31, 38, 39, 41],
+    Wind: [9, 9, 9, 9],
+    PV: [7, 7, 7, 7],
+  },
+  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
+  //   Nuclear: [9, 9, 10, 10],
+  //   Coal: [22, 21, 21, 21],
+  //   Gas_CC: [19, 25, 26, 28],
+  //   Gas_CCS: [25, 33, 34, 36],
+  //   Wind: [0, 0, 0, 0],
+  //   PV: [0, 0, 0, 0],
+  // },
   value_factor: { //Slope and y-intercept, based on reeds results.
     Nuclear: [-.40, 1.04],
     Coal: [-.40, 1.04], //copied from nuclear
