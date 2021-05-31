@@ -227,6 +227,7 @@ function runTiniest() {
       do {
         //Calculate new tech PLCOE, copied from above and find PLCOE_min
         //TODO: refactor so as not to repeat code and optimize
+        first_tech = true;
         for(var tech in inputs.LCOE_new){
           //Use last step's penetration for value factor calculation
           var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
@@ -268,15 +269,14 @@ function runTiniest() {
         }
         //if existing PLCOE is higher than lowest new PLCOE, make the trade, based on shortfall:
         if(PLCOE_exist_max > PLCOE_min){
-          var trade_energy = shortfall;
           if(gen_exist[tech_exist_max] > 0){
             //If we have less than shortfall of existing tech gen, use that remainder as the trade amount.
-            trade_energy = Math.min(gen_exist[tech_exist_max], shortfall);
+            var trade_energy = Math.min(gen_exist[tech_exist_max], shortfall);
             gen_exist[tech_exist_max] -= trade_energy;
             tot_gen_exist -= trade_energy;
             tot_gen_new += trade_energy;
-          } else{
-            trade_energy = Math.min(gen_new[tech_exist_max], shortfall);
+          } else if(gen_new[tech_exist_max] > 0){
+            var trade_energy = Math.min(gen_new[tech_exist_max], shortfall);
             gen_new[tech_exist_max] -= trade_energy;
           }
           gen_new[tech_min] += trade_energy;
