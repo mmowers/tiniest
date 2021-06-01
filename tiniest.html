@@ -36,6 +36,14 @@
       <tr id="LCOE_new-header"><th>Tech</th></tr>
     </table>
   </div>
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
+    Existing Technology LCOE (2018$/MWh)
+  </h5>
+  <div id="LCOE_exist-div" class="collapse">
+    <table id="LCOE_exist-table" class="table table-sm table-striped">
+      <tr id="LCOE_exist-header"><th>Tech</th></tr>
+    </table>
+  </div>
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
     Value factor vs penetration
   </h5>
@@ -126,6 +134,7 @@ for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large 
 
 for (var year of years){
   $('#LCOE_new-header').append('<th>' + year + '</th>');
+  $('#LCOE_exist-header').append('<th>' + year + '</th>');
 }
 for (var tech of inputs.full_techs){
   if (!(tech in inputs.LCOE_new)){continue;}
@@ -136,6 +145,13 @@ for (var tech of inputs.full_techs){
   }
   lcoe_new_str += '</tr>';
   $('#LCOE_new-table').append(lcoe_new_str);
+  //Existing tech LCOE
+  var lcoe_exist_str = '<tr><td>' + tech + '</td>';
+  for (var i = 0; i < inputs.num_time_steps; i++){
+    lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
+  }
+  lcoe_exist_str += '</tr>';
+  $('#LCOE_exist-table').append(lcoe_exist_str);
   //Value Factor
   var vf_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < 2; i++){
