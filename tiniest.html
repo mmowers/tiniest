@@ -191,6 +191,7 @@ function runTiniest() {
       if(year >= inputs.CO2_price.start_year){
         CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
       }
+      //Find new tech with lowest PLCOE
       chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, CO2_price);
       //grow load for this time step
       var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
@@ -210,7 +211,6 @@ function runTiniest() {
       //If any existing tech has higher PLCOE than the lowest PLCOE of new techs, we will retire the existing gen,
       //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest PLCOE and removing the
       //existing tech with highest PLCOE.
-      var PLCOE_exist_max, tech_exist_max;
       do {
         //Find the new tech with lowest PLCOE
         var chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, CO2_price);
@@ -245,6 +245,7 @@ function runTiniest() {
   outChart.data.datasets = tech_gen_datasets;
   outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
 }
+
 function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
   //Get chosen tech and associated PLCOE
   var first_tech = true;
