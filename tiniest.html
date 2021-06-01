@@ -28,6 +28,16 @@
 </div>
 <form id="inputs">
   <h5 id="inputs-title">Inputs</h5>
+  <!-- Load -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#load-div" aria-expanded="false" aria-controls="load-div">
+    Load (TWh/yr)
+  </h5>
+  <div id="load-div" class="collapse">
+    <table id="load-table" class="table table-sm table-striped">
+      <tr id="load-header"></tr>
+    </table>
+  </div>
+  <!-- New tech LCOE -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
     New Technology LCOE (2018$/MWh)
   </h5>
@@ -36,6 +46,7 @@
       <tr id="LCOE_new-header"><th>Tech</th></tr>
     </table>
   </div>
+  <!-- Existing tech LCOE -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
     Existing Technology LCOE (2018$/MWh)
   </h5>
@@ -44,6 +55,7 @@
       <tr id="LCOE_exist-header"><th>Tech</th></tr>
     </table>
   </div>
+  <!-- Value Factor -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
     Value factor (y) vs penetration fraction (x)
   </h5>
@@ -133,9 +145,19 @@ for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large 
 }
 
 for (var year of years){
+  $('#load-header').append('<th>' + year + '</th>');
   $('#LCOE_new-header').append('<th>' + year + '</th>');
   $('#LCOE_exist-header').append('<th>' + year + '</th>');
 }
+
+//Load
+var load_str = '';
+for (var i = 0; i < inputs.num_time_steps; i++){
+  load_str += '<td><input type="text" size="6" id="load-' + i + '" value="' + inputs.load[i]+ '"></td>';
+}
+load_str += '</tr>';
+$('#load-table').append(load_str);
+
 for (var tech of inputs.full_techs){
   if (!(tech in inputs.LCOE_new)){continue;}
   //New tech LCOE
@@ -323,7 +345,15 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
 runTiniest();
 $('input').change(function(){
   arr = $(this).attr('id').split('-');
-  inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+  if(arr.length == 1){
+    inputs[arr[0]] = Number($(this).val());
+  }
+  else if(arr.length == 2){
+    inputs[arr[0]][arr[1]] = Number($(this).val());
+  }
+  else if(arr.length == 3){
+    inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+  }
   runTiniest();
 });
 </script>
