@@ -5,7 +5,7 @@
 <style>
 .chart-container,
 #inputs {
-  max-width: 700px;
+  max-width: 600px;
 }
 .input-header{
   color: #0088cc;
@@ -178,6 +178,11 @@ var config_out = {
       },
       y: {
         stacked: true,
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
       },
     },
   },
