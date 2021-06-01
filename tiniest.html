@@ -73,6 +73,15 @@
       <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
     </table>
   </div>
+  <!-- CO2 Emissions -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_emission-div" aria-expanded="false" aria-controls="CO2_emission-div">
+    CO2 Emissions (metric ton per MWh)
+  </h5>
+  <div id="CO2_emission-div" class="collapse">
+    <table id="CO2_emission-table" class="table table-sm table-striped table-hover">
+      <tr id="CO2_emission-header"><th>Tech</th><th>MT/MWh</th></tr>
+    </table>
+  </div>
 </form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
 <script>
@@ -198,6 +207,11 @@ for (var tech of inputs.full_techs){
   }
   vf_str += '</tr>';
   $('#value_factor-table').append(vf_str);
+  //Emissions
+  var CO2_emission_str = '<tr><td>' + tech + '</td>';
+  CO2_emission_str += '<td><input type="text" size="6" id="CO2_emission-' + tech + '" value="' + inputs.CO2_emission[tech] + '"></td>';
+  CO2_emission_str += '</tr>';
+  $('#CO2_emission-table').append(CO2_emission_str);
 }
 
 //Output Chart. Start with existing gen here so that we can update as we go
