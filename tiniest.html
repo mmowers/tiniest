@@ -37,6 +37,15 @@
       <tr id="load-header"></tr>
     </table>
   </div>
+  <!-- Existing Gen -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#existing_gen-div" aria-expanded="false" aria-controls="existing_gen-div">
+    Existing Tech Generation (TWh/yr, including planned retirements)
+  </h5>
+  <div id="existing_gen-div" class="collapse">
+    <table id="existing_gen-table" class="table table-sm table-striped">
+      <tr id="existing_gen-header"><th>Tech</th></tr>
+    </table>
+  </div>
   <!-- New tech LCOE -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
     New Technology LCOE (2018$/MWh)
@@ -146,6 +155,7 @@ for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large 
 
 for (var year of years){
   $('#load-header').append('<th>' + year + '</th>');
+  $('#existing_gen-header').append('<th>' + year + '</th>');
   $('#LCOE_new-header').append('<th>' + year + '</th>');
   $('#LCOE_exist-header').append('<th>' + year + '</th>');
 }
@@ -160,6 +170,13 @@ $('#load-table').append(load_str);
 
 for (var tech of inputs.full_techs){
   if (!(tech in inputs.LCOE_new)){continue;}
+  //Existing gen
+  var existing_gen_str = '<tr><td>' + tech + '</td>';
+  for (var i = 0; i < inputs.num_time_steps; i++){
+    existing_gen_str += '<td><input type="text" size="6" id="existing_gen-' + tech + '-' + i + '" value="' + inputs.existing_gen[tech][i]+ '"></td>';
+  }
+  existing_gen_str += '</tr>';
+  $('#existing_gen-table').append(existing_gen_str);
   //New tech LCOE
   var lcoe_new_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
