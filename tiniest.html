@@ -5,7 +5,16 @@
 <style>
 .chart-container,
 #inputs {
-  max-width: 800px;
+  max-width: 700px;
+}
+.input-header{
+  color: #0088cc;
+}
+.input-header:hover{
+  cursor: pointer;
+}
+#inputs-title{
+  text-decoration: underline;
 }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -13,21 +22,30 @@
 </head>
 <body>
 
-<h3>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h3>
+<h4>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h4>
 <div class="chart-container">
   <canvas id="outputChart"></canvas>
 </div>
 <form id="inputs">
-  <h5>New Technology Levelized cost of electricity (LCOE) (2018$/MWh)</h5>
-  <table id="LCOE_new-table" class="table table-sm table-striped">
-    <tr id="LCOE_new-header"><th>Tech</th></tr>
-  </table>
-  <h5>Value factor vs penetration</h5>
-  <table id="value_factor-table" class="table table-sm table-striped">
-    <tr id="value_factor-header"><th>Tech</th><th>Slope</th><th>Intercept</th></tr>
-  </table>
+  <h5 id="inputs-title">Inputs</h5>
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
+    New Technology LCOE (2018$/MWh)
+  </h5>
+  <div id="LCOE_new-div" class="collapse">
+    <table id="LCOE_new-table" class="table table-sm table-striped">
+      <tr id="LCOE_new-header"><th>Tech</th></tr>
+    </table>
+  </div>
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
+    Value factor vs penetration
+  </h5>
+  <div id="value_factor-div" class="collapse">
+    <table id="value_factor-table" class="table table-sm table-striped table-hover">
+      <tr id="value_factor-header"><th>Tech</th><th>Slope</th><th>Intercept</th></tr>
+    </table>
+  </div>
 </form>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
 <script>
 var inputs = {
   num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
@@ -114,14 +132,14 @@ for (var tech of inputs.full_techs){
   //New tech LCOE
   var lcoe_new_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
-    lcoe_new_str += '<td><input type="text" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+    lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
   }
   lcoe_new_str += '</tr>';
   $('#LCOE_new-table').append(lcoe_new_str);
   //Value Factor
   var vf_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < 2; i++){
-    vf_str += '<td><input type="text" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
+    vf_str += '<td><input type="text" size="6" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
   }
   vf_str += '</tr>';
   $('#value_factor-table').append(vf_str);
