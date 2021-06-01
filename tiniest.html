@@ -169,41 +169,6 @@ var outChart = new Chart(
   config_out,
 );
 
-function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
-  //Get chosen tech and associated PLCOE
-  var first_tech = true;
-  var PLCOE_chosen, tech_chosen;
-  for(var tech in inputs.LCOE_new){
-    if(new_or_exist == 'exist' && gen_new[tech] + gen_exist[tech] <= 0) { continue;}
-    //Use last step's penetration for value factor calculation
-    var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
-    //calculate value factor at this penetration, y = mx + b
-    var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
-    //Get LCOE for this time step
-    if(new_or_exist == 'new'){
-      var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
-    }
-    else if(new_or_exist == 'exist'){
-      var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
-    }
-    var CO2_cost = CO2_price * inputs.CO2_emission[tech];
-    //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
-    var PLCOE = (LCOE + CO2_cost)/value_factor;
-    if (first_tech == true){
-      PLCOE_chosen = PLCOE;
-      tech_chosen = tech;
-      first_tech = false;
-    } else if (new_or_exist == 'new' && PLCOE < PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
-      tech_chosen = tech;
-    } else if (new_or_exist == 'exist' && PLCOE > PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
-      tech_chosen = tech;
-    }
-  }
-  return {PLCOE: PLCOE_chosen, tech: tech_chosen};
-}
-
 function runTiniest() {
 
   //First initialize some things
@@ -280,6 +245,41 @@ function runTiniest() {
   outChart.data.datasets = tech_gen_datasets;
   outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
 }
+function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
+  //Get chosen tech and associated PLCOE
+  var first_tech = true;
+  var PLCOE_chosen, tech_chosen;
+  for(var tech in inputs.LCOE_new){
+    if(new_or_exist == 'exist' && gen_new[tech] + gen_exist[tech] <= 0) { continue;}
+    //Use last step's penetration for value factor calculation
+    var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
+    //calculate value factor at this penetration, y = mx + b
+    var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+    //Get LCOE for this time step
+    if(new_or_exist == 'new'){
+      var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+    }
+    else if(new_or_exist == 'exist'){
+      var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
+    }
+    var CO2_cost = CO2_price * inputs.CO2_emission[tech];
+    //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
+    var PLCOE = (LCOE + CO2_cost)/value_factor;
+    if (first_tech == true){
+      PLCOE_chosen = PLCOE;
+      tech_chosen = tech;
+      first_tech = false;
+    } else if (new_or_exist == 'new' && PLCOE < PLCOE_chosen){
+      PLCOE_chosen = PLCOE;
+      tech_chosen = tech;
+    } else if (new_or_exist == 'exist' && PLCOE > PLCOE_chosen){
+      PLCOE_chosen = PLCOE;
+      tech_chosen = tech;
+    }
+  }
+  return {PLCOE: PLCOE_chosen, tech: tech_chosen};
+}
+
 runTiniest();
 $('input').change(function(){
   arr = $(this).attr('id').split('-');
