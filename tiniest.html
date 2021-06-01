@@ -82,6 +82,15 @@
       <tr id="CO2_emission-header"><th>Tech</th><th>MT/MWh</th></tr>
     </table>
   </div>
+  <!-- CO2 Price -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_price-div" aria-expanded="false" aria-controls="CO2_price-div">
+    CO2 Price (2018$ per metric ton)
+  </h5>
+  <div id="CO2_price-div" class="collapse">
+    <table id="CO2_price-table" class="table table-sm table-striped table-hover">
+      <tr id="CO2_price-header"><th>Property</th><th>Value</th></tr>
+    </table>
+  </div>
 </form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
 <script>
@@ -170,7 +179,7 @@ for (var year of years){
 }
 
 //Load
-var load_str = '';
+var load_str = '<tr>';
 for (var i = 0; i < inputs.num_time_steps; i++){
   load_str += '<td><input type="text" size="6" id="load-' + i + '" value="' + inputs.load[i]+ '"></td>';
 }
@@ -209,10 +218,16 @@ for (var tech of inputs.full_techs){
   $('#value_factor-table').append(vf_str);
   //Emissions
   var CO2_emission_str = '<tr><td>' + tech + '</td>';
-  CO2_emission_str += '<td><input type="text" size="6" id="CO2_emission-' + tech + '" value="' + inputs.CO2_emission[tech] + '"></td>';
-  CO2_emission_str += '</tr>';
+  CO2_emission_str += '<td><input type="text" size="6" id="CO2_emission-' + tech + '" value="' + inputs.CO2_emission[tech] + '"></td></tr>';
   $('#CO2_emission-table').append(CO2_emission_str);
 }
+
+//CO2 price
+var CO2_price_str = ''
+for (var k in inputs.CO2_price){
+  CO2_price_str += '<tr><td>' + k + '</td><td><input type="text" size="6" id="CO2_price-' + k + '" value="' + inputs.CO2_price[k] + '"></td></tr>';
+}
+$('#CO2_price-table').append(CO2_price_str);
 
 //Output Chart. Start with existing gen here so that we can update as we go
 existing_gen_datasets = []
