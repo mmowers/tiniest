@@ -45,11 +45,11 @@
     </table>
   </div>
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
-    Value factor vs penetration
+    Value factor (y) vs penetration fraction (x)
   </h5>
   <div id="value_factor-div" class="collapse">
     <table id="value_factor-table" class="table table-sm table-striped table-hover">
-      <tr id="value_factor-header"><th>Tech</th><th>Slope</th><th>Intercept</th></tr>
+      <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
     </table>
   </div>
 </form>
@@ -104,13 +104,13 @@ var inputs = {
   //   Wind: [0, 0, 0, 0],
   //   PV: [0, 0, 0, 0],
   // },
-  value_factor: { //Slope and y-intercept, based on reeds results.
-    Nuclear: [-.40, 1.04],
-    Coal: [-.40, 1.04], //copied from nuclear
-    Gas_CC: [-0.85, 1.3],
-    Gas_CCS: [-0.27, 0.98],
-    Wind: [-0.81, 0.78],
-    PV: [-1.33, 0.9],
+  value_factor: { //y-intercept and slope, based on reeds results.
+    Nuclear: [1.04, -.40],
+    Coal: [1.04, -.40], //copied from nuclear
+    Gas_CC: [1.3, -0.85],
+    Gas_CCS: [0.98, -0.27],
+    Wind: [0.78, -0.81],
+    PV: [0.9, -1.33],
   },
   CO2_emission: { //metric tons per MWh, ATB 2020 Moderate
     Nuclear: 0,
@@ -294,7 +294,7 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
     //Use last step's penetration for value factor calculation
     var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
     //calculate value factor at this penetration, y = mx + b
-    var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][0]*tech_penetration + inputs.value_factor[tech][1]);
+    var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0]);
     //Get LCOE for this time step
     if(new_or_exist == 'new'){
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
