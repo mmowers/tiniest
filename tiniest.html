@@ -16,6 +16,9 @@
 #inputs-title{
   text-decoration: underline;
 }
+h5{
+  font-size: 0.9rem;
+}
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -48,7 +51,7 @@
   </div>
   <!-- New tech LCOE -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
-    New Technology LCOE (2018$/MWh)
+    New Technology LCOE at 0% penetration (2018$/MWh)
   </h5>
   <div id="LCOE_new-div" class="collapse">
     <table id="LCOE_new-table" class="table table-sm table-striped">
@@ -57,7 +60,7 @@
   </div>
   <!-- Existing tech LCOE -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
-    Existing Technology LCOE (2018$/MWh)
+    Existing Technology LCOE at 0% penetration (2018$/MWh)
   </h5>
   <div id="LCOE_exist-div" class="collapse">
     <table id="LCOE_exist-table" class="table table-sm table-striped">
@@ -391,12 +394,12 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
     //Get LCOE for this time step
     if(new_or_exist == 'new'){
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
+      //Add slope to LCOE
+      LCOE += inputs.LCOE_slope[tech] * (gen_new[tech] + gen_exist[tech])/1000;
     }
     else if(new_or_exist == 'exist'){
       var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
     }
-    //Add slope to LCOE
-    LCOE += inputs.LCOE_slope[tech] * (gen_new[tech] + gen_exist[tech])/1000;
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
     //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
