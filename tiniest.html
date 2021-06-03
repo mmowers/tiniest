@@ -76,6 +76,30 @@ h5{
       <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
     </table>
   </div>
+  <!-- Natural gas heat rate-->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_heatrate-div" aria-expanded="false" aria-controls="NG_heatrate-div">
+    Natural gas heat rate (MMBtu/MWh)
+  </h5>
+  <div id="NG_heatrate-div" class="collapse">
+    <table id="NG_heatrate-table" class="table table-sm table-striped">
+      <tr id="NG_heatrate-header"><th>Tech</th><th>MMBtu/MWh</th></tr>
+    </table>
+  </div>
+  <!-- Natural gas alpha -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_alpha-div" aria-expanded="false" aria-controls="NG_alpha-div">
+    Natural gas price at no electric sector use (2018$/MMBtu)
+  </h5>
+  <div id="NG_alpha-div" class="collapse">
+    <table id="NG_alpha-table" class="table table-sm table-striped">
+      <tr id="NG_alpha-header"></tr>
+    </table>
+  </div>
+  <!-- Natural gas beta -->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_beta-div" aria-expanded="false" aria-controls="NG_beta-div">
+    Natural gas price slope (2018$/MMBtu per Quad)
+  </h5>
+  <div id="NG_beta-div" class="collapse">
+  </div>
   <!-- Value Factor -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
     Value factor (y) vs penetration fraction (x)
@@ -113,6 +137,7 @@ var inputs = {
   end_year: 2050,
   load: [4011, 4363, 4764, 5317], //TWh per year
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind', 'PV', 'Other'],
+  gas_techs: ['Gas_CC', 'Gas_CCS'],
   colors: {
     Nuclear: '#820000',
     Coal: '#222222',
@@ -134,18 +159,18 @@ var inputs = {
   LCOE_new: { //2018$/MWh, ATB 2020 Moderate
     Nuclear: [75, 73, 70, 66],
     Coal: [72, 70, 69, 67], //High CF
-    Gas_CC: [28, 34, 35, 36], //High CF
-    Gas_CCS: [49, 53, 53, 54], //High CF
+    Gas_CC: [12, 11, 11, 11], //High CF, no fuel
+    Gas_CCS: [29, 26, 25, 24], //High CF, no fuel
     Wind: [31, 24, 22, 19], //class 4
     PV: [31, 18, 16, 14], //Kansas City
   },
   LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs
     Nuclear: [24, 24, 24, 24],
-    Coal: [30, 29, 29, 29],
-    Gas_CC: [22, 28, 29, 30],
-    Gas_CCS: [31, 38, 39, 41],
-    Wind: [9, 9, 9, 9],
-    PV: [7, 7, 7, 7],
+    Coal: [30, 29, 29, 29], //High CF
+    Gas_CC: [4, 4, 4, 4], //High CF, no fuel
+    Gas_CCS: [9, 9, 9, 9], //High CF, no fuel
+    Wind: [9, 9, 9, 9], //class 4
+    PV: [7, 7, 7, 7], //Kansas City
   },
   LCOE_slope: { //2018$/MWh per petawatt-hour of penetration, from reV outputs
     Nuclear: 0,
@@ -155,6 +180,16 @@ var inputs = {
     Wind: 0.674,
     PV: 0.803,
   },
+  NG_heatrate: { //Natural gas heat rate (MMBtu/MWh)
+    Nuclear: 0,
+    Coal: 0,
+    Gas_CC: 6.4,
+    Gas_CCS: 7.5,
+    Wind: 0,
+    PV: 0,
+  },
+  NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (guessed)
+  NG_beta: 0.2, //$/MMBtu per Quad, (guessed)
   // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
   //   Nuclear: [9, 9, 10, 10],
   //   Coal: [22, 21, 21, 21],
@@ -209,8 +244,21 @@ for (var i = 0; i < inputs.num_time_steps; i++){
 }
 load_str += '</tr>';
 $('#load-table').append(load_str);
+//Natural gas alpha
+var NG_alpha_str = '<tr>';
+for (var i = 0; i < inputs.num_time_steps; i++){
+  NG_alpha_str += '<td><input type="text" size="6" id="NG_alpha-' + i + '" value="' + inputs.NG_alpha[i]+ '"></td>';
+}
+NG_alpha_str += '</tr>';
+$('#NG_alpha-table').append(NG_alpha_str);
+//Natural gas beta
+$('#NG_beta-div').append('<input type="text" size="6" id="NG_beta" value="' + inputs.NG_beta + '">');
 
 for (var tech of inputs.full_techs){
+  var no_fuel_str = '';
+  if(inputs.gas_techs.includes(tech)){
+    no_fuel_str += ' (no fuel)';
+  }
   if (!(tech in inputs.LCOE_new)){continue;}
   //Existing gen
   var existing_gen_str = '<tr><td>' + tech + '</td>';
@@ -220,14 +268,14 @@ for (var tech of inputs.full_techs){
   existing_gen_str += '</tr>';
   $('#existing_gen-table').append(existing_gen_str);
   //New tech LCOE
-  var lcoe_new_str = '<tr><td>' + tech + '</td>';
+  var lcoe_new_str = '<tr><td>' + tech + no_fuel_str + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
     lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
   }
   lcoe_new_str += '</tr>';
   $('#LCOE_new-table').append(lcoe_new_str);
   //Existing tech LCOE
-  var lcoe_exist_str = '<tr><td>' + tech + '</td>';
+  var lcoe_exist_str = '<tr><td>' + tech + no_fuel_str + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
     lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
   }
@@ -237,6 +285,10 @@ for (var tech of inputs.full_techs){
   var lcoe_slope_str = '<tr><td>' + tech + '</td>';
   lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
   $('#LCOE_slope-table').append(lcoe_slope_str);
+  //Natural gas heat rate
+  var NG_heatrate_str = '<tr><td>' + tech + '</td>';
+  NG_heatrate_str += '<td><input type="text" size="6" id="NG_heatrate-' + tech + '" value="' + inputs.NG_heatrate[tech] + '"></td></tr>';
+  $('#NG_heatrate-table').append(NG_heatrate_str);
   //Value Factor
   var vf_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < 2; i++){
@@ -321,13 +373,20 @@ function runTiniest() {
   for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
     for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
       var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
+      //Calculate gas price
+      var gas_use = 0; //Quads
+      for(var tech of inputs.gas_techs){
+        gas_use += (gen_new[tech] + gen_exist[tech])*inputs.NG_heatrate[tech]/1e3;
+      }
+      var NG_alpha = inputs.NG_alpha[i] + j*(inputs.NG_alpha[i+1] - inputs.NG_alpha[i])/inputs.num_tiny_steps;
+      var gas_price = NG_alpha + inputs.NG_beta*gas_use;
       //Calculate carbon price
       var CO2_price = 0;
       if(year >= inputs.CO2_price.start_year){
         CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
       }
       //Find new tech with lowest PLCOE
-      chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, CO2_price);
+      chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price);
       //grow load for this time step
       var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
       //Get existing gen by tech and total existing gen
@@ -348,9 +407,9 @@ function runTiniest() {
       //existing tech with highest PLCOE.
       do {
         //Find the new tech with lowest PLCOE
-        var chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, CO2_price);
+        var chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price);
         //Find the existing tech with the highest PLCOE.
-        var chosen_exist = getChosen('exist', i, j, gen_new, gen_exist, tot_load, CO2_price);
+        var chosen_exist = getChosen('exist', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price);
         //if existing PLCOE is higher than lowest new PLCOE, make the trade, based on shortfall:
         if(chosen_exist.PLCOE > chosen_new.PLCOE){
           if(gen_exist[chosen_exist.tech] > 0){
@@ -381,7 +440,7 @@ function runTiniest() {
   outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
 }
 
-function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
+function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price){
   //Get chosen tech and associated PLCOE
   var first_tech = true;
   var PLCOE_chosen, tech_chosen;
@@ -400,6 +459,8 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
     else if(new_or_exist == 'exist'){
       var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
     }
+    //Add NG fuel cost to LCOE
+    LCOE += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
     //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
