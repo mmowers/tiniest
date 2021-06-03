@@ -64,12 +64,21 @@
       <tr id="LCOE_exist-header"><th>Tech</th></tr>
     </table>
   </div>
+  <!-- LCOE slope-->
+  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_slope-div" aria-expanded="false" aria-controls="LCOE_slope-div">
+    LCOE Resource Supply Curve Slope (2018$/MWh per 1000 TWh)
+  </h5>
+  <div id="LCOE_slope-div" class="collapse">
+    <table id="LCOE_slope-table" class="table table-sm table-striped">
+      <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
+    </table>
+  </div>
   <!-- Value Factor -->
   <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
     Value factor (y) vs penetration fraction (x)
   </h5>
   <div id="value_factor-div" class="collapse">
-    <table id="value_factor-table" class="table table-sm table-striped table-hover">
+    <table id="value_factor-table" class="table table-sm table-striped">
       <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
     </table>
   </div>
@@ -78,7 +87,7 @@
     CO2 Emissions (metric ton per MWh)
   </h5>
   <div id="CO2_emission-div" class="collapse">
-    <table id="CO2_emission-table" class="table table-sm table-striped table-hover">
+    <table id="CO2_emission-table" class="table table-sm table-striped">
       <tr id="CO2_emission-header"><th>Tech</th><th>MT/MWh</th></tr>
     </table>
   </div>
@@ -87,7 +96,7 @@
     CO2 Price (2018$ per metric ton)
   </h5>
   <div id="CO2_price-div" class="collapse">
-    <table id="CO2_price-table" class="table table-sm table-striped table-hover">
+    <table id="CO2_price-table" class="table table-sm table-striped">
       <tr id="CO2_price-header"><th>Property</th><th>Value</th></tr>
     </table>
   </div>
@@ -134,6 +143,14 @@ var inputs = {
     Gas_CCS: [31, 38, 39, 41],
     Wind: [9, 9, 9, 9],
     PV: [7, 7, 7, 7],
+  },
+  LCOE_slope: { //2018$/MWh per petawatt-hour of penetration, from reV outputs
+    Nuclear: 0,
+    Coal: 0,
+    Gas_CC: 0,
+    Gas_CCS: 0,
+    Wind: 0.674,
+    PV: 0.803,
   },
   // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
   //   Nuclear: [9, 9, 10, 10],
@@ -213,6 +230,10 @@ for (var tech of inputs.full_techs){
   }
   lcoe_exist_str += '</tr>';
   $('#LCOE_exist-table').append(lcoe_exist_str);
+  //LCOE Slope
+  var lcoe_slope_str = '<tr><td>' + tech + '</td>';
+  lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
+  $('#LCOE_slope-table').append(lcoe_slope_str);
   //Value Factor
   var vf_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < 2; i++){
@@ -374,9 +395,12 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, CO2_price){
     else if(new_or_exist == 'exist'){
       var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
     }
-    var CO2_cost = CO2_price * inputs.CO2_emission[tech];
+    //Add slope to LCOE
+    LCOE += inputs.LCOE_slope[tech] * (gen_new[tech] + gen_exist[tech])/1000;
+    //Add CO2 cost to LCOE
+    LCOE += CO2_price * inputs.CO2_emission[tech];
     //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
-    var PLCOE = (LCOE + CO2_cost)/value_factor;
+    var PLCOE = LCOE/value_factor;
     if (first_tech == true){
       PLCOE_chosen = PLCOE;
       tech_chosen = tech;
