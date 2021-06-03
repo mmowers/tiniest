@@ -175,6 +175,14 @@ var inputs = {
     Wind: [9, 9, 9, 9], //class 4
     PV: [7, 7, 7, 7], //Kansas City
   },
+  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
+  //   Nuclear: [9, 9, 10, 10],
+  //   Coal: [22, 21, 21, 21],
+  //   Gas_CC: [19, 25, 26, 28],
+  //   Gas_CCS: [25, 33, 34, 36],
+  //   Wind: [0, 0, 0, 0],
+  //   PV: [0, 0, 0, 0],
+  // },
   LCOE_slope: { //2018$/MWh per petawatt-hour of penetration, from reV outputs
     Nuclear: 0,
     Coal: 0,
@@ -193,14 +201,6 @@ var inputs = {
   },
   NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (guessed)
   NG_beta: 0.2, //$/MMBtu per Quad, (guessed)
-  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
-  //   Nuclear: [9, 9, 10, 10],
-  //   Coal: [22, 21, 21, 21],
-  //   Gas_CC: [19, 25, 26, 28],
-  //   Gas_CCS: [25, 33, 34, 36],
-  //   Wind: [0, 0, 0, 0],
-  //   PV: [0, 0, 0, 0],
-  // },
   value_factor: { //y-intercept and slope, based on reeds results.
     Nuclear: [1.04, -.40],
     Coal: [1.04, -.40], //copied from nuclear
