@@ -615,8 +615,6 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
     LCOE += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
-    //Make sure LCOE is greater than 0
-    LCOE = Math.max(Number.MIN_VALUE, LCOE);
     //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
     var PLCOE = LCOE/value_factor;
     if (first_tech == true){
