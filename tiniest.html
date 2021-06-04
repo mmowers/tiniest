@@ -636,7 +636,7 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
 
 runTiniest();
 $('input').change(function(){
-  arr = $(this).attr('id').split('-');
+  var arr = $(this).attr('id').split('-');
   if(arr.length == 1){
     inputs[arr[0]] = Number($(this).val());
   }
@@ -645,6 +645,14 @@ $('input').change(function(){
   }
   else if(arr.length == 3){
     inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+    if(arr[0] == 'LCOE_new' && Number($(this).val()) < inputs['LCOE_exist'][arr[1]][arr[2]]){
+      $('#LCOE_exist-' + arr[1] + '-' + arr[2]).val($(this).val());
+      inputs.LCOE_exist[arr[1]][arr[2]] = Number($(this).val());
+    }
+    else if(arr[0] == 'LCOE_exist' && Number($(this).val()) > inputs['LCOE_new'][arr[1]][arr[2]]) {
+      $('#LCOE_new-' + arr[1] + '-' + arr[2]).val($(this).val());
+      inputs.LCOE_new[arr[1]][arr[2]] = Number($(this).val());
+    }
   }
   runTiniest();
 });
