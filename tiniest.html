@@ -602,7 +602,9 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
     //Use last step's penetration for value factor calculation
     var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
     //calculate value factor at this penetration, y = mx + b
-    var value_factor = Math.max(Number.MIN_VALUE, inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0]);
+    var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
+    //If value is zero or negative, don't consider this tech
+    if(value_factor <= 0) { continue;}
     //Get LCOE for this time step
     if(new_or_exist == 'new'){
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
