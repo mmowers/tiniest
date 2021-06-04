@@ -16,11 +16,12 @@
 #inputs-title{
   text-decoration: underline;
 }
-h4{
-  font-size: 1rem;
+#page-title{
+  text-align: center;
+  margin-bottom: 20px;
 }
 h5{
-  font-size: 0.8rem;
+  font-size: 1rem;
 }
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -28,115 +29,123 @@ h5{
 </head>
 <body>
 
-<h4>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h4>
-<div class="chart-container">
-  <canvas id="generationChart"></canvas>
+<h4 id="page-title">TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h4>
+<div class="container">
+  <div class="row">
+    <div class="col">
+      <form id="inputs">
+        <h5 id="inputs-title">Inputs</h5>
+        <!-- Load -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#load-div" aria-expanded="false" aria-controls="load-div">
+          Load (TWh/yr)
+        </h5>
+        <div id="load-div" class="collapse">
+          <table id="load-table" class="table table-sm table-striped">
+            <tr id="load-header"></tr>
+          </table>
+        </div>
+        <!-- Existing Gen -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#existing_gen-div" aria-expanded="false" aria-controls="existing_gen-div">
+          Existing Tech Generation (TWh/yr, including planned retirements)
+        </h5>
+        <div id="existing_gen-div" class="collapse">
+          <table id="existing_gen-table" class="table table-sm table-striped">
+            <tr id="existing_gen-header"><th>Tech</th></tr>
+          </table>
+        </div>
+        <!-- New tech LCOE -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
+          New Technology LCOE at 0% penetration (2018$/MWh)
+        </h5>
+        <div id="LCOE_new-div" class="collapse">
+          <table id="LCOE_new-table" class="table table-sm table-striped">
+            <tr id="LCOE_new-header"><th>Tech</th></tr>
+          </table>
+        </div>
+        <!-- Existing tech LCOE -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
+          Existing Technology LCOE at 0% penetration (2018$/MWh)
+        </h5>
+        <div id="LCOE_exist-div" class="collapse">
+          <table id="LCOE_exist-table" class="table table-sm table-striped">
+            <tr id="LCOE_exist-header"><th>Tech</th></tr>
+          </table>
+        </div>
+        <!-- LCOE slope-->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_slope-div" aria-expanded="false" aria-controls="LCOE_slope-div">
+          LCOE Resource Supply Curve Slope (2018$/MWh per 1000 TWh)
+        </h5>
+        <div id="LCOE_slope-div" class="collapse">
+          <table id="LCOE_slope-table" class="table table-sm table-striped">
+            <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
+          </table>
+        </div>
+        <!-- Natural gas heat rate-->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_heatrate-div" aria-expanded="false" aria-controls="NG_heatrate-div">
+          Natural gas heat rate (MMBtu/MWh)
+        </h5>
+        <div id="NG_heatrate-div" class="collapse">
+          <table id="NG_heatrate-table" class="table table-sm table-striped">
+            <tr id="NG_heatrate-header"><th>Tech</th><th>MMBtu/MWh</th></tr>
+          </table>
+        </div>
+        <!-- Natural gas alpha -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_alpha-div" aria-expanded="false" aria-controls="NG_alpha-div">
+          Natural gas price at no electric sector use (2018$/MMBtu)
+        </h5>
+        <div id="NG_alpha-div" class="collapse">
+          <table id="NG_alpha-table" class="table table-sm table-striped">
+            <tr id="NG_alpha-header"></tr>
+          </table>
+        </div>
+        <!-- Natural gas beta -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_beta-div" aria-expanded="false" aria-controls="NG_beta-div">
+          Natural gas price slope (2018$/MMBtu per Quad)
+        </h5>
+        <div id="NG_beta-div" class="collapse">
+        </div>
+        <!-- Value Factor -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
+          Value factor (y) vs penetration fraction (x)
+        </h5>
+        <div id="value_factor-div" class="collapse">
+          <table id="value_factor-table" class="table table-sm table-striped">
+            <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
+          </table>
+        </div>
+        <!-- CO2 Emissions -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_emission-div" aria-expanded="false" aria-controls="CO2_emission-div">
+          CO2 Emissions (metric ton per MWh)
+        </h5>
+        <div id="CO2_emission-div" class="collapse">
+          <table id="CO2_emission-table" class="table table-sm table-striped">
+            <tr id="CO2_emission-header"><th>Tech</th><th>MT/MWh</th></tr>
+          </table>
+        </div>
+        <!-- CO2 Price -->
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_price-div" aria-expanded="false" aria-controls="CO2_price-div">
+          CO2 Price (2018$ per metric ton)
+        </h5>
+        <div id="CO2_price-div" class="collapse">
+          <table id="CO2_price-table" class="table table-sm table-striped">
+            <tr id="CO2_price-header"><th>Property</th><th>Value</th></tr>
+          </table>
+        </div>
+      </form>
+    </div>
+    <div class="col">
+      <div class="chart-container">
+        <canvas id="generationChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="elecpriceChart"></canvas>
+      </div>
+      <div class="chart-container">
+        <canvas id="CO2Chart"></canvas>
+      </div>
+    </div>
+  </div>
 </div>
-<div class="chart-container">
-  <canvas id="CO2Chart"></canvas>
-</div>
-<div class="chart-container">
-  <canvas id="elecpriceChart"></canvas>
-</div>
-<form id="inputs">
-  <h5 id="inputs-title">Inputs</h5>
-  <!-- Load -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#load-div" aria-expanded="false" aria-controls="load-div">
-    Load (TWh/yr)
-  </h5>
-  <div id="load-div" class="collapse">
-    <table id="load-table" class="table table-sm table-striped">
-      <tr id="load-header"></tr>
-    </table>
-  </div>
-  <!-- Existing Gen -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#existing_gen-div" aria-expanded="false" aria-controls="existing_gen-div">
-    Existing Tech Generation (TWh/yr, including planned retirements)
-  </h5>
-  <div id="existing_gen-div" class="collapse">
-    <table id="existing_gen-table" class="table table-sm table-striped">
-      <tr id="existing_gen-header"><th>Tech</th></tr>
-    </table>
-  </div>
-  <!-- New tech LCOE -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
-    New Technology LCOE at 0% penetration (2018$/MWh)
-  </h5>
-  <div id="LCOE_new-div" class="collapse">
-    <table id="LCOE_new-table" class="table table-sm table-striped">
-      <tr id="LCOE_new-header"><th>Tech</th></tr>
-    </table>
-  </div>
-  <!-- Existing tech LCOE -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
-    Existing Technology LCOE at 0% penetration (2018$/MWh)
-  </h5>
-  <div id="LCOE_exist-div" class="collapse">
-    <table id="LCOE_exist-table" class="table table-sm table-striped">
-      <tr id="LCOE_exist-header"><th>Tech</th></tr>
-    </table>
-  </div>
-  <!-- LCOE slope-->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_slope-div" aria-expanded="false" aria-controls="LCOE_slope-div">
-    LCOE Resource Supply Curve Slope (2018$/MWh per 1000 TWh)
-  </h5>
-  <div id="LCOE_slope-div" class="collapse">
-    <table id="LCOE_slope-table" class="table table-sm table-striped">
-      <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
-    </table>
-  </div>
-  <!-- Natural gas heat rate-->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_heatrate-div" aria-expanded="false" aria-controls="NG_heatrate-div">
-    Natural gas heat rate (MMBtu/MWh)
-  </h5>
-  <div id="NG_heatrate-div" class="collapse">
-    <table id="NG_heatrate-table" class="table table-sm table-striped">
-      <tr id="NG_heatrate-header"><th>Tech</th><th>MMBtu/MWh</th></tr>
-    </table>
-  </div>
-  <!-- Natural gas alpha -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_alpha-div" aria-expanded="false" aria-controls="NG_alpha-div">
-    Natural gas price at no electric sector use (2018$/MMBtu)
-  </h5>
-  <div id="NG_alpha-div" class="collapse">
-    <table id="NG_alpha-table" class="table table-sm table-striped">
-      <tr id="NG_alpha-header"></tr>
-    </table>
-  </div>
-  <!-- Natural gas beta -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_beta-div" aria-expanded="false" aria-controls="NG_beta-div">
-    Natural gas price slope (2018$/MMBtu per Quad)
-  </h5>
-  <div id="NG_beta-div" class="collapse">
-  </div>
-  <!-- Value Factor -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
-    Value factor (y) vs penetration fraction (x)
-  </h5>
-  <div id="value_factor-div" class="collapse">
-    <table id="value_factor-table" class="table table-sm table-striped">
-      <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
-    </table>
-  </div>
-  <!-- CO2 Emissions -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_emission-div" aria-expanded="false" aria-controls="CO2_emission-div">
-    CO2 Emissions (metric ton per MWh)
-  </h5>
-  <div id="CO2_emission-div" class="collapse">
-    <table id="CO2_emission-table" class="table table-sm table-striped">
-      <tr id="CO2_emission-header"><th>Tech</th><th>MT/MWh</th></tr>
-    </table>
-  </div>
-  <!-- CO2 Price -->
-  <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_price-div" aria-expanded="false" aria-controls="CO2_price-div">
-    CO2 Price (2018$ per metric ton)
-  </h5>
-  <div id="CO2_price-div" class="collapse">
-    <table id="CO2_price-table" class="table table-sm table-striped">
-      <tr id="CO2_price-header"><th>Property</th><th>Value</th></tr>
-    </table>
-  </div>
-</form>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-gtEjrD/SeCtmISkJkNUaaKMoLD0//ElJ19smozuHV6z3Iehds+3Ulb9Bn9Plx0x4" crossorigin="anonymous"></script>
 <script>
 var inputs = {
