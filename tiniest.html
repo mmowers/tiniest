@@ -35,6 +35,9 @@ h5{
 <div class="chart-container">
   <canvas id="CO2Chart"></canvas>
 </div>
+<div class="chart-container">
+  <canvas id="elecpriceChart"></canvas>
+</div>
 <form id="inputs">
   <h5 id="inputs-title">Inputs</h5>
   <!-- Load -->
@@ -380,8 +383,8 @@ for (var tech of inputs.full_techs){
 var CO2_init_datasets = [{
     label: 'CO2',
     data: [CO2_tot_init],
-    borderColor: 'rgb(75, 192, 192)',
-    backgroundColor: 'rgb(75, 192, 192)',
+    borderColor: 'rgb(255, 99, 132)',
+    backgroundColor: 'rgb(255, 99, 132)',
 }];
 
 var CO2_data_out = {
@@ -426,12 +429,63 @@ var CO2Chart = new Chart(
   CO2_config_out,
 );
 
+//Electricity Price Chart. Start with zero price, to be overridden later.
+var elecprice_init_datasets = [{
+    label: 'Electricity Price',
+    data: [0],
+    borderColor: 'rgb(54, 162, 235)',
+    backgroundColor:  'rgb(54, 162, 235)',
+}];
+
+var elecprice_data_out = {
+  labels: [inputs.start_year],
+  datasets: elecprice_init_datasets,
+};
+var elecprice_config_out = {
+  type: 'line',
+  data: elecprice_data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        min: 0,
+        title: {
+          display: true,
+          text: 'Bulk Electricity Price ($/MWh)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+    },
+  },
+};
+var elecpriceChart = new Chart(
+  document.getElementById('elecpriceChart'),
+  elecprice_config_out,
+);
+
 function runTiniest() {
 
   //First initialize some things
   var year_labels = [inputs.start_year];
   var tech_gen_datasets = JSON.parse(JSON.stringify(existing_gen_datasets)); //Deep copy
   var CO2_tot_datasets = JSON.parse(JSON.stringify(CO2_init_datasets)); //Deep copy
+  var elecprice_datasets = JSON.parse(JSON.stringify(elecprice_init_datasets)); //Deep copy
   var gen_new = {}
   var gen_exist = {};
   for(var tech in inputs.existing_gen){
@@ -502,10 +556,15 @@ function runTiniest() {
       for (var tech of inputs.full_techs){
         CO2_tot += inputs.CO2_emission[tech] * (gen_new[tech] + gen_exist[tech]);
       }
+      //If this is the first iteration, reset the start year electricity price
+      if (i == 0 && j == 1){
+        elecprice_datasets[0].data[0] = chosen_new.PLCOE;
+      }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
         year_labels.push(year);
         CO2_tot_datasets[0].data.push(CO2_tot);
+        elecprice_datasets[0].data.push(chosen_new.PLCOE);
         for(var n = 0; n < inputs.full_techs.length; n++){
           tech_gen_datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
         }
@@ -518,6 +577,9 @@ function runTiniest() {
   CO2Chart.data.labels = year_labels;
   CO2Chart.data.datasets = CO2_tot_datasets;
   CO2Chart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  elecpriceChart.data.labels = year_labels;
+  elecpriceChart.data.datasets = elecprice_datasets;
+  elecpriceChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
 
 }
 
