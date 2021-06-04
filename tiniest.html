@@ -30,7 +30,10 @@ h5{
 
 <h4>TINIEST (This Is Not - If Even Slightly - Thorough) Electricity Model</h4>
 <div class="chart-container">
-  <canvas id="outputChart"></canvas>
+  <canvas id="generationChart"></canvas>
+</div>
+<div class="chart-container">
+  <canvas id="CO2Chart"></canvas>
 </div>
 <form id="inputs">
   <h5 id="inputs-title">Inputs</h5>
@@ -198,6 +201,7 @@ var inputs = {
     Gas_CCS: 7.5,
     Wind: 0,
     PV: 0,
+    Other: 0,
   },
   NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (guessed)
   NG_beta: 0.2, //$/MMBtu per Quad, (guessed)
@@ -216,6 +220,7 @@ var inputs = {
     Gas_CCS: 0.04,
     Wind: 0,
     PV: 0,
+    Other: 0,
   },
   CO2_price: { //2018 dollars per metric ton
     start_year: 2022,
@@ -312,8 +317,8 @@ for (var k in inputs.CO2_price){
 }
 $('#CO2_price-table').append(CO2_price_str);
 
-//Output Chart. Start with existing gen here so that we can update as we go
-existing_gen_datasets = []
+//Generation Chart. Start with existing gen here so that we can update as we go
+var existing_gen_datasets = [];
 for (var tech of inputs.full_techs){
   existing_gen_datasets.push({
     label: tech,
@@ -323,13 +328,13 @@ for (var tech of inputs.full_techs){
   });
 }
 
-var data_out = {
+var gen_data_out = {
   labels: [inputs.start_year],
   datasets: existing_gen_datasets,
 };
-var config_out = {
+var gen_config_out = {
   type: 'bar',
-  data: data_out,
+  data: gen_data_out,
   options: {
     scales: {
       x: {
@@ -345,6 +350,13 @@ var config_out = {
       },
       y: {
         stacked: true,
+        title: {
+          display: true,
+          text: 'Generation (TWh/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
       },
     },
     plugins: {
@@ -354,9 +366,64 @@ var config_out = {
     },
   },
 };
-var outChart = new Chart(
-  document.getElementById('outputChart'),
-  config_out,
+var generationChart = new Chart(
+  document.getElementById('generationChart'),
+  gen_config_out,
+);
+
+//CO2 Emissions Chart. Start with existing emissions here so that we can update as we go
+var CO2_tot_init = 0;
+for (var tech of inputs.full_techs){
+  CO2_tot_init += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
+}
+
+var CO2_init_datasets = [{
+    label: 'CO2',
+    data: [CO2_tot_init],
+    borderColor: 'rgb(75, 192, 192)',
+    backgroundColor: 'rgb(75, 192, 192)',
+}];
+
+var CO2_data_out = {
+  labels: [inputs.start_year],
+  datasets: CO2_init_datasets,
+};
+var CO2_config_out = {
+  type: 'line',
+  data: CO2_data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        min: 0,
+        title: {
+          display: true,
+          text: 'CO2 Emissions (MMton/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+    },
+  },
+};
+var CO2Chart = new Chart(
+  document.getElementById('CO2Chart'),
+  CO2_config_out,
 );
 
 function runTiniest() {
@@ -364,6 +431,7 @@ function runTiniest() {
   //First initialize some things
   var year_labels = [inputs.start_year];
   var tech_gen_datasets = JSON.parse(JSON.stringify(existing_gen_datasets)); //Deep copy
+  var CO2_tot_datasets = JSON.parse(JSON.stringify(CO2_init_datasets)); //Deep copy
   var gen_new = {}
   var gen_exist = {};
   for(var tech in inputs.existing_gen){
@@ -429,18 +497,28 @@ function runTiniest() {
         }
       } while(chosen_exist.PLCOE > chosen_new.PLCOE);
 
+      //Calculate total emissions
+      var CO2_tot = 0;
+      for (var tech of inputs.full_techs){
+        CO2_tot += inputs.CO2_emission[tech] * (gen_new[tech] + gen_exist[tech]);
+      }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
         year_labels.push(year);
+        CO2_tot_datasets[0].data.push(CO2_tot);
         for(var n = 0; n < inputs.full_techs.length; n++){
           tech_gen_datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
         }
       }
     }
   }
-  outChart.data.labels = year_labels;
-  outChart.data.datasets = tech_gen_datasets;
-  outChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  generationChart.data.labels = year_labels;
+  generationChart.data.datasets = tech_gen_datasets;
+  generationChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  CO2Chart.data.labels = year_labels;
+  CO2Chart.data.datasets = CO2_tot_datasets;
+  CO2Chart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+
 }
 
 function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price){
