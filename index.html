@@ -55,7 +55,7 @@ h5{
         </div>
         <!-- New tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
-          New Technology LCOE at 0% penetration (2018$/MWh)
+          New Technology LCOE at 0% market share (2018$/MWh)
         </h5>
         <div id="LCOE_new-div" class="collapse">
           <table id="LCOE_new-table" class="table table-sm table-striped">
@@ -64,7 +64,7 @@ h5{
         </div>
         <!-- Existing tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
-          Existing Technology LCOE at 0% penetration (2018$/MWh)
+          Existing Technology LCOE at 0% market share (2018$/MWh)
         </h5>
         <div id="LCOE_exist-div" class="collapse">
           <table id="LCOE_exist-table" class="table table-sm table-striped">
@@ -106,7 +106,7 @@ h5{
         </div>
         <!-- Value Factor -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
-          Value factor (y) vs penetration fraction (x)
+          Value factor (y) vs market share fraction (x)
         </h5>
         <div id="value_factor-div" class="collapse">
           <table id="value_factor-table" class="table table-sm table-striped">
@@ -198,7 +198,7 @@ var inputs = {
   //   Wind: [0, 0, 0, 0],
   //   PV: [0, 0, 0, 0],
   // },
-  LCOE_slope: { //2018$/MWh per petawatt-hour of penetration, from reV outputs
+  LCOE_slope: { //2018$/MWh per petawatt-hour of generation, from reV outputs
     Nuclear: 0,
     Coal: 0,
     Gas_CC: 0,
@@ -215,9 +215,9 @@ var inputs = {
     PV: 0,
     Other: 0,
   },
-  NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (guessed)
-  NG_beta: 0.2, //$/MMBtu per Quad, (guessed)
-  value_factor: { //y-intercept and slope, based on reeds results.
+  NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (GUESSED, NEEDS UPDATE)
+  NG_beta: 0.2, //$/MMBtu per Quad, (GUESSED, NEEDS UPDATE)
+  value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.99, -.30],
     Coal: [.99, -.30], //copied from nuclear
     Gas_CC: [1.14, -0.60],
@@ -613,9 +613,9 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
   for(var tech in inputs.LCOE_new){
     if(new_or_exist == 'exist' && gen_new[tech] + gen_exist[tech] <= 0) { continue;}
     if(exclude_techs.includes(tech)) { continue;}
-    //Use last step's penetration for value factor calculation
+    //Use last step's market share for value factor calculation
     var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
-    //calculate value factor at this penetration, y = mx + b
+    //calculate value factor at this market share, y = mx + b
     var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
     //If value is zero or negative, don't consider this tech
     if(value_factor <= 0) { continue;}
