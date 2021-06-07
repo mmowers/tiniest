@@ -241,6 +241,20 @@ var inputs = {
   },
 };
 
+var urlData = Object.fromEntries([...new URLSearchParams(location.search)]);
+for (var key in urlData){
+  var arr = key.split('-');
+  if(arr.length == 1 && arr[0] in inputs){
+    inputs[arr[0]] = Number(urlData[key]);
+  }
+  else if(arr.length == 2 && arr[0] in inputs && arr[1] in inputs[arr[0]]){
+    inputs[arr[0]][arr[1]] = Number(urlData[key]);
+  }
+  else if(arr.length == 3 && arr[0] in inputs && arr[1] in inputs[arr[0]] && arr[2] in inputs[arr[0]][arr[1]]){
+    inputs[arr[0]][arr[1]][arr[2]] = Number(urlData[key]);
+  }
+}
+
 var years = []
 for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
   years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
@@ -637,7 +651,7 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
 
 runTiniest();
 $('input').change(function(){
-  arr = $(this).attr('id').split('-');
+  var arr = $(this).attr('id').split('-');
   if(arr.length == 1){
     inputs[arr[0]] = Number($(this).val());
   }
@@ -647,6 +661,11 @@ $('input').change(function(){
   else if(arr.length == 3){
     inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
   }
+  urlData[$(this).attr('id')] = $(this).val();
+  if (history.pushState) {
+    var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + $.param(urlData);
+    window.history.pushState({path:newurl},'',newurl);
+}
   runTiniest();
 });
 </script>
