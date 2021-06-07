@@ -105,12 +105,12 @@ h5{
         <div id="NG_beta-div" class="collapse">
         </div>
         <!-- Value Factor -->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
+        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#integration_cost-div" aria-expanded="false" aria-controls="integration_cost-div">
           Value factor (y) vs market share fraction (x)
         </h5>
-        <div id="value_factor-div" class="collapse">
-          <table id="value_factor-table" class="table table-sm table-striped">
-            <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
+        <div id="integration_cost-div" class="collapse">
+          <table id="integration_cost-table" class="table table-sm table-striped">
+            <tr id="integration_cost-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
           </table>
         </div>
         <!-- CO2 Emissions -->
@@ -217,13 +217,13 @@ var inputs = {
   },
   NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (GUESSED, NEEDS UPDATE)
   NG_beta: 0.2, //$/MMBtu per Quad, (GUESSED, NEEDS UPDATE)
-  value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
-    Nuclear: [.99, -.30],
-    Coal: [.99, -.30], //copied from nuclear
-    Gas_CC: [1.14, -0.60],
-    Gas_CCS: [0.96, -0.20],
-    Wind: [0.75, -1.05],
-    PV: [0.87, -1.35],
+  integration_cost: { //2018$/MWh per pen_frac, y-intercept and slope, based on reeds results.
+    Nuclear: [.78, 8.59],
+    Coal: [.78, 8.59], //copied from nuclear
+    Gas_CC: [-3.49, 17.57],
+    Gas_CCS: [2.1, 4.49],
+    Wind: [8.55, 38.93],
+    PV: [6.39, 36.76],
   },
   CO2_emission: { //metric tons per MWh, ATB 2020 Moderate
     Nuclear: 0,
@@ -324,12 +324,12 @@ for (var tech of inputs.full_techs){
   NG_heatrate_str += '<td><input type="text" size="6" id="NG_heatrate-' + tech + '" value="' + inputs.NG_heatrate[tech] + '"></td></tr>';
   $('#NG_heatrate-table').append(NG_heatrate_str);
   //Value Factor
-  var vf_str = '<tr><td>' + tech + '</td>';
+  var ic_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < 2; i++){
-    vf_str += '<td><input type="text" size="6" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
+    ic_str += '<td><input type="text" size="6" id="integration_cost-' + tech + '-' + i + '" value="' + inputs.integration_cost[tech][i]+ '"></td>';
   }
-  vf_str += '</tr>';
-  $('#value_factor-table').append(vf_str);
+  ic_str += '</tr>';
+  $('#integration_cost-table').append(ic_str);
   //Emissions
   var CO2_emission_str = '<tr><td>' + tech + '</td>';
   CO2_emission_str += '<td><input type="text" size="6" id="CO2_emission-' + tech + '" value="' + inputs.CO2_emission[tech] + '"></td></tr>';
@@ -533,7 +533,7 @@ function runTiniest() {
       if(year >= inputs.CO2_price.start_year){
         CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
       }
-      //Find new tech with lowest PLCOE
+      //Find new tech with lowest SLCOE
       chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, []);
       //grow load for this time step
       var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
@@ -550,16 +550,16 @@ function runTiniest() {
       //Update tot_gen_new
       tot_gen_new = tot_load - tot_gen_exist;
 
-      //If any existing tech has higher PLCOE than the lowest PLCOE of new techs, we will retire the existing gen,
-      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest PLCOE and removing the
-      //existing tech with highest PLCOE.
+      //If any existing tech has higher SLCOE than the lowest SLCOE of new techs, we will retire the existing gen,
+      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest SLCOE and removing the
+      //existing tech with highest SLCOE.
       do {
-        //Find the new tech with lowest PLCOE
+        //Find the new tech with lowest SLCOE
         var chosen_new = getChosen('new', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, []);
-        //Find the existing tech with the highest PLCOE.
+        //Find the existing tech with the highest SLCOE.
         var chosen_exist = getChosen('exist', i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, [chosen_new.tech]);
-        //if existing PLCOE is higher than lowest new PLCOE, make the trade, based on shortfall:
-        if(chosen_exist.PLCOE > chosen_new.PLCOE){
+        //if existing SLCOE is higher than lowest new SLCOE, make the trade, based on shortfall:
+        if(chosen_exist.SLCOE > chosen_new.SLCOE){
           if(gen_exist[chosen_exist.tech] > 0){
             //If we have less than shortfall of existing tech gen, use that remainder as the trade amount.
             var trade_energy = Math.min(gen_exist[chosen_exist.tech], shortfall);
@@ -572,7 +572,7 @@ function runTiniest() {
           }
           gen_new[chosen_new.tech] += trade_energy;
         }
-      } while(chosen_exist.PLCOE > chosen_new.PLCOE);
+      } while(chosen_exist.SLCOE > chosen_new.SLCOE);
 
       //Calculate total emissions
       var CO2_tot = 0;
@@ -581,13 +581,13 @@ function runTiniest() {
       }
       //If this is the first iteration, reset the start year electricity price
       if (i == 0 && j == 1){
-        elecprice_datasets[0].data[0] = chosen_new.PLCOE;
+        elecprice_datasets[0].data[0] = chosen_new.SLCOE;
       }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
         year_labels.push(year);
         CO2_tot_datasets[0].data.push(CO2_tot);
-        elecprice_datasets[0].data.push(chosen_new.PLCOE);
+        elecprice_datasets[0].data.push(chosen_new.SLCOE);
         for(var n = 0; n < inputs.full_techs.length; n++){
           tech_gen_datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
         }
@@ -607,18 +607,16 @@ function runTiniest() {
 }
 
 function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, exclude_techs){
-  //Get chosen tech and associated PLCOE
+  //Get chosen tech and associated SLCOE
   var first_tech = true;
-  var PLCOE_chosen, tech_chosen;
+  var SLCOE_chosen, tech_chosen;
   for(var tech in inputs.LCOE_new){
     if(new_or_exist == 'exist' && gen_new[tech] + gen_exist[tech] <= 0) { continue;}
     if(exclude_techs.includes(tech)) { continue;}
     //Use last step's market share for value factor calculation
     var tech_penetration = (gen_new[tech] + gen_exist[tech])/tot_load;
     //calculate value factor at this market share, y = mx + b
-    var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
-    //If value is zero or negative, don't consider this tech
-    if(value_factor <= 0) { continue;}
+    var integration_cost = inputs.integration_cost[tech][1]*tech_penetration + inputs.integration_cost[tech][0];
     //Get LCOE for this time step
     if(new_or_exist == 'new'){
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
@@ -632,21 +630,21 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
     LCOE += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
-    //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
-    var PLCOE = LCOE/value_factor;
+    //Calculate SLCOE and keep track of the chosen SLCOE and corresponding tech.
+    var SLCOE = LCOE + integration_cost;
     if (first_tech == true){
-      PLCOE_chosen = PLCOE;
+      SLCOE_chosen = SLCOE;
       tech_chosen = tech;
       first_tech = false;
-    } else if (new_or_exist == 'new' && PLCOE < PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
+    } else if (new_or_exist == 'new' && SLCOE < SLCOE_chosen){
+      SLCOE_chosen = SLCOE;
       tech_chosen = tech;
-    } else if (new_or_exist == 'exist' && PLCOE > PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
+    } else if (new_or_exist == 'exist' && SLCOE > SLCOE_chosen){
+      SLCOE_chosen = SLCOE;
       tech_chosen = tech;
     }
   }
-  return {PLCOE: PLCOE_chosen, tech: tech_chosen};
+  return {SLCOE: SLCOE_chosen, tech: tech_chosen};
 }
 
 runTiniest();
