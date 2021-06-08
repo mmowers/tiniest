@@ -683,10 +683,12 @@ $('input').change(function(){
 });
 
 $('#download-data').click(function(){
-  var rows = [[''].concat(generationChart.data.labels)]
+  var rows = [['',''].concat(generationChart.data.labels)]
   generationChart.data.datasets.forEach(function(value, index, array){
-    rows.push([value.label].concat(value.data))
+    rows.push(['Gen (TWh/yr)', value.label].concat(value.data))
   });
+  rows.push(['Elec Price (2018$/MWh)', ''].concat(elecpriceChart.data.datasets[0].data))
+  rows.push(['CO2 Emissions (MMton/yr)', ''].concat(CO2Chart.data.datasets[0].data))
   var csvContent = "data:text/csv;charset=utf-8,"
     + rows.map(e => e.join(",")).join("\n");
   var encodedUri = encodeURI(csvContent);
