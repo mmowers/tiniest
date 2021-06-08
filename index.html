@@ -228,8 +228,8 @@ var inputs = {
     PV: 0,
     Other: 0,
   },
-  NG_alpha: [0.7, 1, 1.2, 2], //2018$/MMBtu, assuming no electric sector use (GUESSED, NEEDS UPDATE)
-  NG_beta: 0.2, //$/MMBtu per Quad, (GUESSED, NEEDS UPDATE)
+  NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS natural gas supply curve.
+  NG_beta: 0.49, //$/MMBtu per Quad, based on ReEDS natural gas supply curve.
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.99, -.30],
     Coal: [.99, -.30], //copied from nuclear
@@ -286,6 +286,7 @@ for (var year of years){
   $('#existing_gen-header').append('<th>' + year + '</th>');
   $('#LCOE_new-header').append('<th>' + year + '</th>');
   $('#LCOE_exist-header').append('<th>' + year + '</th>');
+  $('#NG_alpha-header').append('<th>' + year + '</th>');
 }
 
 //Load
