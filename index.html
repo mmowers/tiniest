@@ -13,7 +13,8 @@
 .input-header:hover{
   cursor: pointer;
 }
-#inputs-title{
+#inputs-title,
+#output-data-title{
   text-decoration: underline;
 }
 #page-title{
@@ -23,6 +24,14 @@
 h5{
   font-size: 1rem;
 }
+#output-data-title{
+  margin-top: 30px;
+}
+#download-data{
+  color: #0088cc;
+  cursor: pointer;
+}
+
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -132,6 +141,10 @@ h5{
           </table>
         </div>
       </form>
+      <div id="output-data">
+        <h5 id="output-data-title">Output Data</h5>
+        <h5 id="download-data">Download Results</h5>
+      </div>
     </div>
     <div class="col">
       <div class="chart-container">
@@ -667,6 +680,21 @@ $('input').change(function(){
     window.history.pushState({path:newurl},'',newurl);
 }
   runTiniest();
+});
+
+$('#download-data').click(function(){
+  var rows = [[''].concat(generationChart.data.labels)]
+  generationChart.data.datasets.forEach(function(value, index, array){
+    rows.push([value.label].concat(value.data))
+  });
+  var csvContent = "data:text/csv;charset=utf-8,"
+    + rows.map(e => e.join(",")).join("\n");
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", "tiniest_results.csv");
+  document.body.appendChild(link); // Required for FF
+  link.click();
 });
 </script>
 </body>
