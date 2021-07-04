@@ -542,6 +542,10 @@ function runTiniest(inputs) {
   var elecprice_out = [0];
 
   //Now initialize some variables
+  var years = []
+  for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
+    years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
+  }
   var gen_new = {}
   var gen_exist = {};
   for(var tech in inputs.existing_gen){
