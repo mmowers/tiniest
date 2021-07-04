@@ -368,9 +368,9 @@ for (var k in inputs.CO2_price){
 $('#CO2_price-table').append(CO2_price_str);
 
 //Generation Chart. Start with existing gen here so that we can update as we go
-var existing_gen_datasets = [];
+var tech_gen_datasets = [];
 for (var tech of inputs.full_techs){
-  existing_gen_datasets.push({
+  tech_gen_datasets.push({
     label: tech,
     data: [inputs.existing_gen[tech][0]],
     borderColor: inputs.colors[tech],
@@ -380,7 +380,7 @@ for (var tech of inputs.full_techs){
 
 var gen_data_out = {
   labels: [inputs.start_year],
-  datasets: existing_gen_datasets,
+  datasets: tech_gen_datasets,
 };
 var gen_config_out = {
   type: 'bar',
@@ -427,7 +427,7 @@ for (var tech of inputs.full_techs){
   CO2_tot_init += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
 }
 
-var CO2_init_datasets = [{
+var CO2_datasets = [{
     label: 'CO2',
     data: [CO2_tot_init],
     borderColor: 'rgb(255, 99, 132)',
@@ -436,7 +436,7 @@ var CO2_init_datasets = [{
 
 var CO2_data_out = {
   labels: [inputs.start_year],
-  datasets: CO2_init_datasets,
+  datasets: CO2_datasets,
 };
 var CO2_config_out = {
   type: 'line',
@@ -477,7 +477,7 @@ var CO2Chart = new Chart(
 );
 
 //Electricity Price Chart. Start with zero price, to be overridden later.
-var elecprice_init_datasets = [{
+var elecprice_datasets = [{
     label: 'Electricity Price',
     data: [0],
     borderColor: 'rgb(54, 162, 235)',
@@ -486,7 +486,7 @@ var elecprice_init_datasets = [{
 
 var elecprice_data_out = {
   labels: [inputs.start_year],
-  datasets: elecprice_init_datasets,
+  datasets: elecprice_datasets,
 };
 var elecprice_config_out = {
   type: 'line',
@@ -526,13 +526,20 @@ var elecpriceChart = new Chart(
   elecprice_config_out,
 );
 
-function runTiniest() {
+function runTiniest(inputs) {
 
-  //First initialize some things
+  //First initialize outputs
   var year_labels = [inputs.start_year];
-  var tech_gen_datasets = JSON.parse(JSON.stringify(existing_gen_datasets)); //Deep copy
-  var CO2_tot_datasets = JSON.parse(JSON.stringify(CO2_init_datasets)); //Deep copy
-  var elecprice_datasets = JSON.parse(JSON.stringify(elecprice_init_datasets)); //Deep copy
+  var tech_gen_out = {};
+  for (var tech of inputs.full_techs){
+    tech_gen_out[tech] = [inputs.existing_gen[tech][0]]
+  }
+  var CO2_tot_out = [0];
+  for (var tech of inputs.full_techs){
+    CO2_tot_out[0] += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
+  }
+  var elecprice_out = [0];
+
   var gen_new = {}
   var gen_exist = {};
   for(var tech in inputs.existing_gen){
@@ -605,29 +612,20 @@ function runTiniest() {
       }
       //If this is the first iteration, reset the start year electricity price
       if (i == 0 && j == 1){
-        elecprice_datasets[0].data[0] = chosen_new.PLCOE;
+        elecprice_out[0] = chosen_new.PLCOE;
       }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
         year_labels.push(year);
-        CO2_tot_datasets[0].data.push(CO2_tot);
-        elecprice_datasets[0].data.push(chosen_new.PLCOE);
-        for(var n = 0; n < inputs.full_techs.length; n++){
-          tech_gen_datasets[n].data.push(gen_new[inputs.full_techs[n]] + gen_exist[inputs.full_techs[n]]);
+        CO2_tot_out.push(CO2_tot);
+        elecprice_out.push(chosen_new.PLCOE);
+        for (var tech of inputs.full_techs){
+          tech_gen_out[tech].push(gen_new[tech] + gen_exist[tech]);
         }
       }
     }
   }
-  generationChart.data.labels = year_labels;
-  generationChart.data.datasets = tech_gen_datasets;
-  generationChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
-  CO2Chart.data.labels = year_labels;
-  CO2Chart.data.datasets = CO2_tot_datasets;
-  CO2Chart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
-  elecpriceChart.data.labels = year_labels;
-  elecpriceChart.data.datasets = elecprice_datasets;
-  elecpriceChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
-
+  return {year_labels: year_labels, tech_gen_out: tech_gen_out, elecprice_out: elecprice_out, CO2_tot_out: CO2_tot_out};
 }
 
 function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, exclude_techs){
@@ -673,7 +671,23 @@ function getChosen(new_or_exist, i, j, gen_new, gen_exist, tot_load, gas_price, 
   return {PLCOE: PLCOE_chosen, tech: tech_chosen};
 }
 
-runTiniest();
+function updateCharts(outputs){
+  generationChart.data.labels = outputs.year_labels;
+  for(var n = 0; n < inputs.full_techs.length; n++){
+    var tech = inputs.full_techs[n];
+    generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
+  }
+  generationChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  CO2Chart.data.labels = outputs.year_labels;
+  CO2Chart.data.datasets[0].data = outputs.CO2_tot_out;
+  CO2Chart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  elecpriceChart.data.labels = outputs.year_labels;
+  elecpriceChart.data.datasets[0].data = outputs.elecprice_out;
+  elecpriceChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+}
+var outputs = runTiniest(inputs);
+updateCharts(outputs);
+
 $('input').change(function(){
   var arr = $(this).attr('id').split('-');
   if(arr.length == 1){
@@ -690,7 +704,8 @@ $('input').change(function(){
     var newurl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?' + $.param(urlData);
     window.history.pushState({path:newurl},'',newurl);
 }
-  runTiniest();
+  outputs = runTiniest(inputs);
+  updateCharts(outputs);
 });
 
 $('#download-data').click(function(){
