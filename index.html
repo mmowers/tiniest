@@ -165,7 +165,7 @@ h5{
 <script>
 var inputs = {
   num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
-  num_tiny_steps: 1000, //This will be the tiny time steps within the larger time steps
+  num_tiny_steps: 100, //This will be the tiny time steps within the larger time steps
   start_year: 2020,
   end_year: 2050,
   load: [4011, 4363, 4764, 5317], //TWh per year
@@ -677,13 +677,13 @@ function updateCharts(outputs){
     var tech = inputs.full_techs[n];
     generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
   }
-  generationChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  generationChart.update() //it didn't seem to work to update within runTiniest(), perhaps because it was updating too fast.
   CO2Chart.data.labels = outputs.year_labels;
   CO2Chart.data.datasets[0].data = outputs.CO2_tot_out;
-  CO2Chart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  CO2Chart.update()
   elecpriceChart.data.labels = outputs.year_labels;
   elecpriceChart.data.datasets[0].data = outputs.elecprice_out;
-  elecpriceChart.update() //it didn't seem to work to update within the routine, perhaps because it was updating too fast.
+  elecpriceChart.update()
 }
 var outputs = runTiniest(inputs);
 updateCharts(outputs);
