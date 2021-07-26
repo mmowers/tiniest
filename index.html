@@ -190,6 +190,7 @@ var inputs = {
     PV: [171, 195, 227, 135], //upv, dupv, distpv. I included distributed pv growth here as exogenous
     Other: [406, 396, 387, 377], //bio, canada, csp, geo, hydro, lfill_gas, o_g_s, corrected to equal load in 2020 tho...
   },
+  metric_comp: 'PLCOE', //'PLCOE' is profitability-adjusted LCOE. 'SLCOE' is system LCOE
   LCOE_new: { //2018$/MWh, ATB 2020 Moderate
     Nuclear: [75, 73, 70, 66],
     Coal: [72, 70, 69, 67], //High CF
@@ -269,13 +270,25 @@ var urlData = Object.fromEntries([...new URLSearchParams(location.search)]);
 for (var key in urlData){
   var arr = key.split('-');
   if(arr.length == 1 && arr[0] in inputs){
-    inputs[arr[0]] = Number(urlData[key]);
+    if(isNumeric(urlData[key])){
+      inputs[arr[0]] = Number(urlData[key]);
+    }else{
+      inputs[arr[0]] = urlData[key];
+    }
   }
   else if(arr.length == 2 && arr[0] in inputs && arr[1] in inputs[arr[0]]){
-    inputs[arr[0]][arr[1]] = Number(urlData[key]);
+    if(isNumeric(urlData[key])){
+      inputs[arr[0]][arr[1]] = Number(urlData[key]);
+    }else{
+      inputs[arr[0]][arr[1]] = urlData[key];
+    }
   }
   else if(arr.length == 3 && arr[0] in inputs && arr[1] in inputs[arr[0]] && arr[2] in inputs[arr[0]][arr[1]]){
-    inputs[arr[0]][arr[1]][arr[2]] = Number(urlData[key]);
+    if(isNumeric(urlData[key])){
+      inputs[arr[0]][arr[1]][arr[2]] = Number(urlData[key]);
+    }else{
+      inputs[arr[0]][arr[1]][arr[2]] = urlData[key];
+    }
   }
 }
 
@@ -570,8 +583,14 @@ function runTiniest(inputs) {
       if(year >= inputs.CO2_price.start_year){
         CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
       }
-      //Find new tech with lowest PLCOE
-      chosen_new = getChosen('new', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, []);
+      //Use last year's chosen metric as the electricity price. If this is the first iteration, set to false
+      if (i == 0 && j == 1){
+        var elecprice = false;
+      } else{
+        var elecprice = chosen_new.metric
+      }
+      //Find new tech with lowest metric
+      var chosen_new = getChosen('new', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, [], elecprice);
       //grow load for this time step
       var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
       //Get existing gen by tech and total existing gen
@@ -587,16 +606,16 @@ function runTiniest(inputs) {
       //Update tot_gen_new
       tot_gen_new = tot_load - tot_gen_exist;
 
-      //If any existing tech has higher PLCOE than the lowest PLCOE of new techs, we will retire the existing gen,
-      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest PLCOE and removing the
-      //existing tech with highest PLCOE.
+      //If any existing tech has higher metric than the lowest metric of new techs, we will retire the existing gen,
+      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest metric and removing the
+      //existing tech with highest metric.
       do {
-        //Find the new tech with lowest PLCOE
-        var chosen_new = getChosen('new', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, []);
-        //Find the existing tech with the highest PLCOE.
-        var chosen_exist = getChosen('exist', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, [chosen_new.tech]);
-        //if existing PLCOE is higher than lowest new PLCOE, make the trade, based on shortfall:
-        if(chosen_exist.PLCOE > chosen_new.PLCOE){
+        //Find the new tech with lowest metric
+        chosen_new = getChosen('new', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, [], elecprice);
+        //Find the existing tech with the highest metric.
+        var chosen_exist = getChosen('exist', inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, [chosen_new.tech], elecprice);
+        //if existing metric is higher than lowest new metric, make the trade, based on shortfall:
+        if(chosen_exist.metric > chosen_new.metric){
           if(gen_exist[chosen_exist.tech] > 0){
             //If we have less than shortfall of existing tech gen, use that remainder as the trade amount.
             var trade_energy = Math.min(gen_exist[chosen_exist.tech], shortfall);
@@ -609,7 +628,7 @@ function runTiniest(inputs) {
           }
           gen_new[chosen_new.tech] += trade_energy;
         }
-      } while(chosen_exist.PLCOE > chosen_new.PLCOE);
+      } while(chosen_exist.metric > chosen_new.metric);
 
       //Calculate total emissions
       var CO2_tot = 0;
@@ -618,13 +637,13 @@ function runTiniest(inputs) {
       }
       //If this is the first iteration, reset the start year electricity price
       if (i == 0 && j == 1){
-        elecprice_out[0] = chosen_new.PLCOE;
+        elecprice_out[0] = chosen_new.metric;
       }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
         year_labels.push(year);
         CO2_tot_out.push(CO2_tot);
-        elecprice_out.push(chosen_new.PLCOE);
+        elecprice_out.push(chosen_new.metric);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_new[tech] + gen_exist[tech]);
         }
@@ -634,10 +653,10 @@ function runTiniest(inputs) {
   return {year_labels: year_labels, tech_gen_out: tech_gen_out, elecprice_out: elecprice_out, CO2_tot_out: CO2_tot_out};
 }
 
-function getChosen(new_or_exist, inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, exclude_techs){
-  //Get chosen tech and associated PLCOE
+function getChosen(new_or_exist, inputs, i, j, gen_new, gen_exist, tot_load, gas_price, CO2_price, exclude_techs, elecprice){
+  //Get chosen tech and associated metric
   var first_tech = true;
-  var PLCOE_chosen, tech_chosen;
+  var metric_chosen, tech_chosen;
   for(var tech in inputs.LCOE_new){
     if(new_or_exist == 'exist' && gen_new[tech] + gen_exist[tech] <= 0) { continue;}
     if(exclude_techs.includes(tech)) { continue;}
@@ -646,7 +665,7 @@ function getChosen(new_or_exist, inputs, i, j, gen_new, gen_exist, tot_load, gas
     //calculate value factor at this market share, y = mx + b
     var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
     //If value is zero or negative, don't consider this tech
-    if(value_factor <= 0) { continue;}
+    if(inputs.metric_comp == 'PLCOE' && value_factor <= 0) { continue;}
     //Get LCOE for this time step
     if(new_or_exist == 'new'){
       var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
@@ -660,21 +679,25 @@ function getChosen(new_or_exist, inputs, i, j, gen_new, gen_exist, tot_load, gas
     LCOE += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
-    //Calculate PLCOE and keep track of the chosen PLCOE and corresponding tech.
-    var PLCOE = LCOE/value_factor;
+    //Calculate metric and keep track of the chosen metric and corresponding tech.
+    if (inputs.metric_comp == 'PLCOE' || elecprice == false){
+      var metric = LCOE/value_factor;
+    } else if (inputs.metric_comp == 'SLCOE'){
+      var metric = LCOE + elecprice - value_factor*elecprice;
+    }
     if (first_tech == true){
-      PLCOE_chosen = PLCOE;
+      metric_chosen = metric;
       tech_chosen = tech;
       first_tech = false;
-    } else if (new_or_exist == 'new' && PLCOE < PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
+    } else if (new_or_exist == 'new' && metric < metric_chosen){
+      metric_chosen = metric;
       tech_chosen = tech;
-    } else if (new_or_exist == 'exist' && PLCOE > PLCOE_chosen){
-      PLCOE_chosen = PLCOE;
+    } else if (new_or_exist == 'exist' && metric > metric_chosen){
+      metric_chosen = metric;
       tech_chosen = tech;
     }
   }
-  return {PLCOE: PLCOE_chosen, tech: tech_chosen};
+  return {metric: metric_chosen, tech: tech_chosen};
 }
 
 function updateCharts(outputs){
@@ -691,19 +714,38 @@ function updateCharts(outputs){
   elecpriceChart.data.datasets[0].data = outputs.elecprice_out;
   elecpriceChart.update()
 }
+
+function isNumeric(str) {
+  if (typeof str != "string") return false // we only process strings!
+  return !isNaN(str) && // use type coercion to parse the _entirety_ of the string (`parseFloat` alone does not do this)...
+         !isNaN(parseFloat(str)) // ...and ensure strings of whitespace fail
+}
+
 var outputs = runTiniest(inputs);
 updateCharts(outputs);
 
 $('input').change(function(){
   var arr = $(this).attr('id').split('-');
   if(arr.length == 1){
-    inputs[arr[0]] = Number($(this).val());
+    if(isNumeric($(this).val())){
+      inputs[arr[0]] = Number($(this).val());
+    }else{
+      inputs[arr[0]] = $(this).val();
+    }
   }
   else if(arr.length == 2){
-    inputs[arr[0]][arr[1]] = Number($(this).val());
+    if(isNumeric($(this).val())){
+      inputs[arr[0]][arr[1]] = Number($(this).val());
+    }else{
+      inputs[arr[0]][arr[1]] = $(this).val();
+    }
   }
   else if(arr.length == 3){
-    inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+    if(isNumeric($(this).val())){
+      inputs[arr[0]][arr[1]][arr[2]] = Number($(this).val());
+    }else{
+      inputs[arr[0]][arr[1]][arr[2]] = $(this).val();
+    }
   }
   urlData[$(this).attr('id')] = $(this).val();
   if (history.pushState) {
