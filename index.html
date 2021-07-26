@@ -190,7 +190,7 @@ var inputs = {
     PV: [171, 195, 227, 135], //upv, dupv, distpv. I included distributed pv growth here as exogenous
     Other: [406, 396, 387, 377], //bio, canada, csp, geo, hydro, lfill_gas, o_g_s, corrected to equal load in 2020 tho...
   },
-  metric_comp: 'PLCOE', //'PLCOE' is profitability-adjusted LCOE. 'SLCOE' is system LCOE
+  metric_comp: 'PLCOE', //'LCOE' is levelized cost of electricity, 'SLCOE' is system LCOE, 'PLCOE' is profitability-adjusted LCOE.
   LCOE_new: { //2018$/MWh, ATB 2020 Moderate
     Nuclear: [75, 73, 70, 66],
     Coal: [72, 70, 69, 67], //High CF
@@ -684,6 +684,8 @@ function getChosen(new_or_exist, inputs, i, j, gen_new, gen_exist, tot_load, gas
       var metric = LCOE/value_factor;
     } else if (inputs.metric_comp == 'SLCOE'){
       var metric = LCOE + elecprice - value_factor*elecprice;
+    } else if (inputs.metric_comp == 'LCOE'){
+      var metric = LCOE;
     }
     if (first_tech == true){
       metric_chosen = metric;
