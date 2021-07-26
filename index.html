@@ -628,6 +628,12 @@ function runTiniest(inputs) {
           }
           gen_future[chosen_new.tech] += trade_energy;
         }
+        //Re-calculate gas price as gas_use may have changed
+        gas_use = 0; //Quads
+        for(var tech of inputs.gas_techs){
+          gas_use += (gen_future[tech] + gen_exist[tech])*inputs.NG_heatrate[tech]/1e3;
+        }
+        gas_price = NG_alpha + inputs.NG_beta*gas_use;
       } while(chosen_exist.metric > chosen_new.metric);
 
       //Calculate total emissions
