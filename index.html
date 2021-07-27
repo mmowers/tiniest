@@ -158,6 +158,9 @@ h5{
       <div class="chart-container">
         <canvas id="CO2Chart"></canvas>
       </div>
+      <div class="chart-container">
+        <canvas id="costChart"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -169,6 +172,7 @@ var inputs = {
   num_tiny_steps: 100, //This will be the tiny time steps within the larger time steps
   start_year: 2020,
   end_year: 2050,
+  CRF: .07,
   load: [4011, 4363, 4764, 5317], //TWh per year
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind', 'PV', 'Other'],
   gas_techs: ['Gas_CC', 'Gas_CCS'],
@@ -435,6 +439,60 @@ var generationChart = new Chart(
   gen_config_out,
 );
 
+//Cost Chart. Start with zero cost for the very first fraction of a year.
+var tech_cost_datasets = [];
+for (var tech of inputs.full_techs){
+  tech_cost_datasets.push({
+    label: tech,
+    data: [0],
+    borderColor: inputs.colors[tech],
+    backgroundColor: inputs.colors[tech],
+  });
+}
+
+var cost_data_out = {
+  labels: [inputs.start_year],
+  datasets: tech_cost_datasets,
+};
+var cost_config_out = {
+  type: 'bar',
+  data: cost_data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        stacked: true,
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Cost (Bil$/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+    },
+  },
+};
+var costChart = new Chart(
+  document.getElementById('costChart'),
+  cost_config_out,
+);
+
 //CO2 Emissions Chart. Start with existing emissions here so that we can update as we go
 var CO2_tot_init = 0;
 for (var tech of inputs.full_techs){
@@ -545,8 +603,12 @@ function runTiniest(inputs) {
   //First initialize outputs
   var year_labels = [inputs.start_year];
   var tech_gen_out = {};
+  var tech_cost_out = {};
+  var tech_cost = {};
   for (var tech of inputs.full_techs){
-    tech_gen_out[tech] = [inputs.existing_gen[tech][0]]
+    tech_gen_out[tech] = [inputs.existing_gen[tech][0]];
+    tech_cost_out[tech] = [0];
+    tech_cost[tech] = 0;
   }
   var CO2_tot_out = [0];
   for (var tech of inputs.full_techs){
@@ -559,11 +621,14 @@ function runTiniest(inputs) {
   for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
     years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
   }
-  var gen_future = {}
+  var tiny_step_yrs = (inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1)/inputs.num_tiny_steps;
+  var gen_future = {};
   var gen_exist = {};
-  for(var tech in inputs.existing_gen){
+  var gen_new = {};
+  for(var tech of inputs.full_techs){
     gen_exist[tech] = inputs.existing_gen[tech][0];
     gen_future[tech] = 0;
+    gen_new[tech] = 0;
   }
   var tot_gen_future = 0;
   var tot_load = inputs.load[0];
@@ -571,6 +636,10 @@ function runTiniest(inputs) {
   for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
     for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
       var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
+      //Reset new generation
+      for(var tech in inputs.existing_gen){
+        gen_new[tech] = 0;
+      }
       //Calculate gas price
       var gas_use = 0; //Quads
       for(var tech of inputs.gas_techs){
@@ -602,6 +671,7 @@ function runTiniest(inputs) {
       }
       //Now fill the shortfall in generation with the tech with the lowest LCOE
       var shortfall = tot_load - tot_gen_exist - tot_gen_future;
+      gen_new[chosen_new.tech] += shortfall;
       gen_future[chosen_new.tech] += shortfall;
       //Update tot_gen_future
       tot_gen_future = tot_load - tot_gen_exist;
@@ -626,6 +696,7 @@ function runTiniest(inputs) {
             var trade_energy = Math.min(gen_future[chosen_exist.tech], shortfall);
             gen_future[chosen_exist.tech] -= trade_energy;
           }
+          gen_new[chosen_new.tech] += trade_energy;
           gen_future[chosen_new.tech] += trade_energy;
         }
         //Re-calculate gas price as gas_use may have changed
@@ -641,6 +712,16 @@ function runTiniest(inputs) {
       for (var tech of inputs.full_techs){
         CO2_tot += inputs.CO2_emission[tech] * (gen_future[tech] + gen_exist[tech]);
       }
+      //Calculate tech-specific costs in Bil $
+      for (var tech of inputs.full_techs){
+        if (gen_future[tech] + gen_exist[tech] >= 0 && tech in chosen_new.LCOEs && tech in chosen_exist.LCOEs){
+          tech_cost[tech] += (
+            gen_new[tech]*(chosen_new.LCOEs[tech] - chosen_exist.LCOEs[tech])/inputs.CRF +
+            (gen_future[tech] + gen_exist[tech])*chosen_exist.LCOEs[tech]*tiny_step_yrs
+          )/1e3;
+        }
+      }
+
       //If this is the first iteration, reset the start year electricity price
       if (i == 0 && j == 1){
         elecprice_out[0] = chosen_new.metric;
@@ -652,20 +733,27 @@ function runTiniest(inputs) {
         elecprice_out.push(chosen_new.metric);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
+          tech_cost_out[tech].push(tech_cost[tech]);
+          //Reset tech_cost after outputting.
+          tech_cost[tech] = 0;
         }
       }
     }
   }
-  return {year_labels: year_labels, tech_gen_out: tech_gen_out, elecprice_out: elecprice_out, CO2_tot_out: CO2_tot_out};
+  return {year_labels: year_labels,
+          tech_gen_out: tech_gen_out,
+          tech_cost_out: tech_cost_out,
+          elecprice_out: elecprice_out,
+          CO2_tot_out: CO2_tot_out};
 }
 
 function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, exclude_techs, elecprice){
   //Get chosen tech and associated metric
   var first_tech = true;
   var metric_chosen, tech_chosen;
+  var LCOEs = {};
   for(var tech in inputs.LCOE_new){
     if(new_or_exist == 'exist' && gen_future[tech] + gen_exist[tech] <= 0) { continue;}
-    if(exclude_techs.includes(tech)) { continue;}
     //Use last step's market share for value factor calculation
     var tech_penetration = (gen_future[tech] + gen_exist[tech])/tot_load;
     //calculate value factor at this market share, y = mx + b
@@ -685,6 +773,10 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
     LCOE += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE += CO2_price * inputs.CO2_emission[tech];
+    //Save LCOEs[tech] for output
+    LCOEs[tech] = LCOE;
+    //Still output LCOE for exlcuded techs
+    if(exclude_techs.includes(tech)) { continue;}
     //Calculate metric and keep track of the chosen metric and corresponding tech.
     if (inputs.metric_comp == 'PLCOE' || elecprice == false){
       var metric = LCOE/value_factor;
@@ -705,16 +797,19 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
       tech_chosen = tech;
     }
   }
-  return {metric: metric_chosen, tech: tech_chosen};
+  return {metric: metric_chosen, tech: tech_chosen, LCOEs: LCOEs};
 }
 
 function updateCharts(outputs){
   generationChart.data.labels = outputs.year_labels;
+  costChart.data.labels = outputs.year_labels;
   for(var n = 0; n < inputs.full_techs.length; n++){
     var tech = inputs.full_techs[n];
     generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
+    costChart.data.datasets[n].data = outputs.tech_cost_out[tech];
   }
   generationChart.update() //it didn't seem to work to update within runTiniest(), perhaps because it was updating too fast.
+  costChart.update()
   CO2Chart.data.labels = outputs.year_labels;
   CO2Chart.data.datasets[0].data = outputs.CO2_tot_out;
   CO2Chart.update()
@@ -771,6 +866,9 @@ $('#download-data').click(function(){
   });
   rows.push(['Elec Price (2018$/MWh)', ''].concat(elecpriceChart.data.datasets[0].data))
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(CO2Chart.data.datasets[0].data))
+  costChart.data.datasets.forEach(function(value, index, array){
+    rows.push(['Cost (Bil $/yr)', value.label].concat(value.data))
+  });
   var csvContent = "data:text/csv;charset=utf-8,"
     + rows.map(e => e.join(",")).join("\n");
   var encodedUri = encodeURI(csvContent);
