@@ -31,6 +31,15 @@ h5{
   color: #0088cc;
   cursor: pointer;
 }
+#CO2_price-slider-val{
+  margin-right: 10px;
+  display:inline-block;
+  width: 20px;
+}
+#CO2_price-start_level{
+  width: 300px;
+}
+
 
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -381,9 +390,15 @@ for (var tech of inputs.full_techs){
 //CO2 price
 var CO2_price_str = ''
 for (var k in inputs.CO2_price){
-  CO2_price_str += '<tr><td>' + k + '</td><td><input type="text" size="6" id="CO2_price-' + k + '" value="' + inputs.CO2_price[k] + '"></td></tr>';
+  if (k == 'start_level'){
+    CO2_price_str += '<tr><td>' + k + '</td><td><span id="CO2_price-slider-val">0</span><input type="range" min="0" max="99" size="6" id="CO2_price-' + k + '" value="' + inputs.CO2_price[k] + '"></td></tr>';
+  }else{
+    CO2_price_str += '<tr><td>' + k + '</td><td><input type="text" size="6" id="CO2_price-' + k + '" value="' + inputs.CO2_price[k] + '"></td></tr>';
+  }
 }
 $('#CO2_price-table').append(CO2_price_str);
+
+Chart.defaults.animation.duration = 500;
 
 //Generation Chart. Start with existing gen here so that we can update as we go
 var tech_gen_datasets = [];
@@ -827,7 +842,7 @@ function isNumeric(str) {
 var outputs = runTiniest(inputs);
 updateCharts(outputs);
 
-$('input').change(function(){
+$(document).on('input', 'input', function(){
   var arr = $(this).attr('id').split('-');
   if(arr.length == 1){
     if(isNumeric($(this).val())){
@@ -858,6 +873,11 @@ $('input').change(function(){
   outputs = runTiniest(inputs);
   updateCharts(outputs);
 });
+
+$(document).on('input', '#CO2_price-start_level', function(){
+  $('#CO2_price-slider-val').text($(this).val());
+});
+$('#CO2_price-slider-val').text($('#CO2_price-start_level').val());
 
 $('#download-data').click(function(){
   var rows = [['',''].concat(generationChart.data.labels)]
