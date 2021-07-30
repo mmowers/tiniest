@@ -44,6 +44,8 @@ h5{
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src='https://cdn.plot.ly/plotly-2.3.0.min.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js'></script>
 </head>
 <body>
 
@@ -176,6 +178,7 @@ h5{
       <div class="chart-container">
         <canvas id="costChart"></canvas>
       </div>
+      <div id='rangeChart'></div>
     </div>
   </div>
 </div>
@@ -879,6 +882,97 @@ $(document).on('input', 'input', function(){
   outputs = runTiniest(inputs);
   updateCharts(outputs);
 });
+
+var mult_start = 1;
+var mult_end = 0;
+var mult_step = 0.1;
+var result_range_out = {CO2_cum: [], PV_LCOE_end: [], Wind_LCOE_end: []};
+for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
+  for(var wind_mult = mult_start; wind_mult >= mult_end; wind_mult -= mult_step){
+    var inputs_cp = JSON.parse(JSON.stringify(inputs));
+    for(var i = 0; i < inputs.num_time_steps; i++){
+      //linearly change costs from no change to full mult change
+      var pv_mult_interp = (pv_mult - 1)/(inputs.num_time_steps - 1)*i + 1;
+      inputs_cp.LCOE_new.PV[i] *= pv_mult_interp;
+      inputs_cp.LCOE_exist.PV[i] *= pv_mult_interp;
+      var wind_mult_interp = (wind_mult - 1)/(inputs.num_time_steps - 1)*i + 1;
+      inputs_cp.LCOE_new.Wind[i] *= wind_mult_interp;
+      inputs_cp.LCOE_exist.Wind[i] *= wind_mult_interp;
+    }
+    var results_range = runTiniest(inputs_cp);
+    var CO2_cum = 0;
+    for(var i = 0; i < results_range.CO2_tot_out.length; i++){
+      CO2_cum += results_range.CO2_tot_out[i];
+    }
+    result_range_out.PV_LCOE_end.push(inputs_cp.LCOE_new.PV[inputs.num_time_steps - 1]);
+    result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind[inputs.num_time_steps - 1]);
+    result_range_out.CO2_cum.push(CO2_cum);
+  }
+}
+
+var trace1 = {
+  x:result_range_out.PV_LCOE_end,
+  y: result_range_out.Wind_LCOE_end,
+  z: result_range_out.CO2_cum,
+  mode: 'markers',
+  marker: {
+    size: 4,
+    line: {
+    color: 'rgba(217, 217, 217, 0.14)',
+    width: 0.5},
+    opacity: 0.8},
+  type: 'scatter3d'
+};
+
+var data = [trace1];
+var layout = {
+  width: 700,
+  height: 700,
+  margin: {
+    l: 0,
+    r: 0,
+    b: 100,
+    t: 100
+  },
+  title: {
+    text:'CO2 emissions',
+  },
+  scene: {
+    xaxis: {
+      title: {
+        text: 'PV 2050 LCOE',
+        font: {
+          family: 'Courier New, monospace',
+          size: 18,
+          color: '#7f7f7f'
+        }
+      },
+    },
+    yaxis: {
+      title: {
+        text: 'Wind 2050 LCOE',
+        font: {
+          family: 'Courier New, monospace',
+          size: 18,
+          color: '#7f7f7f'
+        }
+      }
+    },
+    zaxis: {
+      title: {
+        text: 'CO2 emissions (MMton)',
+        font: {
+          family: 'Courier New, monospace',
+          size: 18,
+          color: '#7f7f7f'
+        }
+      },
+      range: [0, Math.max.apply(null, result_range_out.CO2_cum)]
+    },
+  }
+};
+
+Plotly.newPlot('rangeChart', data, layout);
 
 $(document).on('input', '#CO2_price-start_level', function(){
   $('#CO2_price-slider-val').text($(this).val());
