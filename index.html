@@ -886,7 +886,7 @@ $(document).on('input', 'input', function(){
 var mult_start = 1;
 var mult_end = 0;
 var mult_step = 0.1;
-var result_range_out = {CO2_cum: [], PV_LCOE_end: [], Wind_LCOE_end: []};
+var result_range_out = {CO2_cum: [], CO2_end: [], PV_LCOE_end: [], Wind_LCOE_end: []};
 for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
   for(var wind_mult = mult_start; wind_mult >= mult_end; wind_mult -= mult_step){
     var inputs_cp = JSON.parse(JSON.stringify(inputs));
@@ -907,13 +907,14 @@ for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
     result_range_out.PV_LCOE_end.push(inputs_cp.LCOE_new.PV[inputs.num_time_steps - 1]);
     result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind[inputs.num_time_steps - 1]);
     result_range_out.CO2_cum.push(CO2_cum);
+    result_range_out.CO2_end.push(results_range.CO2_tot_out[results_range.CO2_tot_out.length - 1]);
   }
 }
 
 var trace1 = {
   x:result_range_out.PV_LCOE_end,
   y: result_range_out.Wind_LCOE_end,
-  z: result_range_out.CO2_cum,
+  z: result_range_out.CO2_end,
   mode: 'markers',
   marker: {
     size: 4,
@@ -935,7 +936,7 @@ var layout = {
     t: 100
   },
   title: {
-    text:'CO2 emissions',
+    text:'2050 CO2 emissions vs VRE LCOE',
   },
   scene: {
     xaxis: {
@@ -960,14 +961,14 @@ var layout = {
     },
     zaxis: {
       title: {
-        text: 'CO2 emissions (MMton)',
+        text: '2050 CO2 emissions (MMton)',
         font: {
           family: 'Courier New, monospace',
           size: 18,
           color: '#7f7f7f'
         }
       },
-      range: [0, Math.max.apply(null, result_range_out.CO2_cum)]
+      range: [0, Math.max.apply(null, result_range_out.CO2_end)]
     },
   }
 };
