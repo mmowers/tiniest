@@ -30,6 +30,7 @@ h5{
 }
 #run-analysis-loading{
   display: none;
+  margin-top: 10px;
 }
 #download-data{
   color: #0088cc;
@@ -163,16 +164,15 @@ h5{
         <h5 id="download-data">Download Results</h5>
       </div>
       <div id="run-analysis">
-        <h5 id="run-analysis-title">Run Example analysis with TINIEST</h5>
+        <h5 id="run-analysis-title">Run Example analysis with TINIEST: 2050 CO2 emissions vs VRE LCOE</h5>
         <button id="run-analysis-button" class="btn btn-success">Run</button>
         <div id="run-analysis-loading">
-          <span class="spinner-border text-success" role="status">
+          <span id="run-analysis-spinner" class="spinner-border text-success" role="status">
             <span class="visually-hidden">Loading...</span>
           </span>
-          <span>Running TINIEST <span id="num_runs">many</span> times.</span>
+          <span id="run-analysis-prefix"></span><span id="num_runs"></span><span id="run-analysis-suffix"></span>
         </div>
       </div>
-
     </div>
     <div class="col">
       <div class="chart-container">
@@ -919,11 +919,15 @@ $('#download-data').click(function(){
 
 
 $('#run-analysis-button').click(function(){
+  var start = Date.now();
   var mult_start = 1;
   var mult_end = 0;
   var mult_step = 0.02;
   var num_runs = Math.pow((mult_start - mult_end)/mult_step, 2);
+  $('#run-analysis-prefix').text('Running TINIEST ');
   $('#num_runs').text(num_runs);
+  $('#run-analysis-suffix').text(' times (~10 seconds).');
+  $('#run-analysis-spinner').show();
   $('#run-analysis-loading').show();
   //setTimeout used here to make the function asynchronous, needed to display the loading icon properly.
   //See these for more info:
@@ -1018,7 +1022,9 @@ $('#run-analysis-button').click(function(){
   };
 
   Plotly.newPlot('rangeChart', data, layout);
-  $('#run-analysis-loading').hide();
+  $('#run-analysis-spinner').hide();
+  $('#run-analysis-prefix').text('Done running TINIEST ');
+  $('#run-analysis-suffix').text(' times in ' + String((Date.now() - start)/1000) + ' seconds. Scroll down to see results.');
   $('#rangeChart')[0].scrollIntoView();
 }, 0);
 });
