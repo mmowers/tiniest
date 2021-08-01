@@ -28,6 +28,9 @@ h5{
   margin-top: 30px;
   text-decoration: underline;
 }
+#run-analysis-loading{
+  display: none;
+}
 #download-data{
   color: #0088cc;
   cursor: pointer;
@@ -161,7 +164,13 @@ h5{
       </div>
       <div id="run-analysis">
         <h5 id="run-analysis-title">Run Example analysis with TINIEST</h5>
-        <button id="run-analysis-button" class="btn btn-success">Run</h5>
+        <button id="run-analysis-button" class="btn btn-success">Run</button>
+        <div id="run-analysis-loading">
+          <span class="spinner-border text-success" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </span>
+          <span>Running TINIEST <span id="num_runs">many</span> times.</span>
+        </div>
       </div>
 
     </div>
@@ -913,6 +922,10 @@ $('#run-analysis-button').click(function(){
   var mult_start = 1;
   var mult_end = 0;
   var mult_step = 0.02;
+  var num_runs = Math.pow((mult_start - mult_end)/mult_step, 2);
+  $('#num_runs').text(num_runs);
+  $('#run-analysis-loading').show();
+  setTimeout(function() {
   var result_range_out = {CO2_cum: [], CO2_end: [], PV_LCOE_end: [], Wind_LCOE_end: []};
   for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
     for(var wind_mult = mult_start; wind_mult >= mult_end; wind_mult -= mult_step){
@@ -1001,7 +1014,9 @@ $('#run-analysis-button').click(function(){
   };
 
   Plotly.newPlot('rangeChart', data, layout);
+  $('#run-analysis-loading').hide();
   $('#rangeChart')[0].scrollIntoView();
+}, 0);
 });
 
 </script>
