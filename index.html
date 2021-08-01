@@ -925,6 +925,10 @@ $('#run-analysis-button').click(function(){
   var num_runs = Math.pow((mult_start - mult_end)/mult_step, 2);
   $('#num_runs').text(num_runs);
   $('#run-analysis-loading').show();
+  //setTimeout used here to make the function asynchronous, needed to display the loading icon properly.
+  //See these for more info:
+  //https://stackoverflow.com/questions/779379/why-is-settimeoutfn-0-sometimes-useful
+  //https://stackoverflow.com/questions/749666/show-a-javascript-loader-image-while-function-is-executing
   setTimeout(function() {
   var result_range_out = {CO2_cum: [], CO2_end: [], PV_LCOE_end: [], Wind_LCOE_end: []};
   for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
