@@ -164,7 +164,7 @@ h5{
         <h5 id="download-data">Download Results</h5>
       </div>
       <div id="run-analysis">
-        <h5 id="run-analysis-title">Run Example analysis with TINIEST: 2050 CO2 emissions vs VRE LCOE</h5>
+        <h5 id="run-analysis-title">Run Example analysis with TINIEST: 2050 CO2 emissions vs. Wind/PV LCOE</h5>
         <button id="run-analysis-button" class="btn btn-success">Run</button>
         <div id="run-analysis-loading">
           <span id="run-analysis-spinner" class="spinner-border text-success" role="status">
@@ -984,7 +984,7 @@ $('#run-analysis-button').click(function(){
       t: 100
     },
     title: {
-      text:'2050 CO2 emissions vs VRE LCOE',
+      text:'2050 CO2 emissions vs Wind/PV LCOE',
     },
     scene: {
       xaxis: {
@@ -1025,7 +1025,7 @@ $('#run-analysis-button').click(function(){
   $('#run-analysis-spinner').hide();
   $('#run-analysis-prefix').text('Done running TINIEST ');
   $('#run-analysis-suffix').text(' times in ' + String((Date.now() - start)/1000) + ' seconds. Scroll down to see results.');
-  $('#rangeChart')[0].scrollIntoView();
+  // $('#rangeChart')[0].scrollIntoView();
 }, 0);
 });
 
