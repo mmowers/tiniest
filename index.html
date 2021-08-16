@@ -187,6 +187,9 @@ h5{
       <div class="chart-container">
         <canvas id="costChart"></canvas>
       </div>
+      <div class="chart-container">
+        <canvas id="costmChart"></canvas>
+      </div>
       <div id='rangeChart'></div>
     </div>
   </div>
@@ -526,6 +529,60 @@ var costChart = new Chart(
   cost_config_out,
 );
 
+//Metric-baesd Cost Chart. Start with zero cost for the very first fraction of a year.
+var tech_costm_datasets = [];
+for (var tech of inputs.full_techs){
+  tech_costm_datasets.push({
+    label: tech,
+    data: [0],
+    borderColor: inputs.colors[tech],
+    backgroundColor: inputs.colors[tech],
+  });
+}
+
+var costm_data_out = {
+  labels: [inputs.start_year],
+  datasets: tech_costm_datasets,
+};
+var costm_config_out = {
+  type: 'bar',
+  data: costm_data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        stacked: true,
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Metric-Based Cost (Bil$/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
+      },
+    },
+  },
+};
+var costmChart = new Chart(
+  document.getElementById('costmChart'),
+  costm_config_out,
+);
+
 //CO2 Emissions Chart. Start with existing emissions here so that we can update as we go
 var CO2_tot_init = 0;
 for (var tech of inputs.full_techs){
@@ -638,10 +695,14 @@ function runTiniest(inputs) {
   var tech_gen_out = {};
   var tech_cost_out = {};
   var tech_cost = {};
+  var tech_costm_out = {};
+  var tech_costm = {};
   for (var tech of inputs.full_techs){
     tech_gen_out[tech] = [inputs.existing_gen[tech][0]];
     tech_cost_out[tech] = [0];
     tech_cost[tech] = 0;
+    tech_costm_out[tech] = [0];
+    tech_costm[tech] = 0;
   }
   var CO2_tot_out = [0];
   for (var tech of inputs.full_techs){
@@ -753,6 +814,12 @@ function runTiniest(inputs) {
             (gen_future[tech] + gen_exist[tech])*chosen_exist.LCOEs[tech]*tiny_step_yrs
           )/1e3;
         }
+        if (gen_future[tech] + gen_exist[tech] >= 0 && tech in chosen_new.metrics && tech in chosen_exist.metrics){
+          tech_costm[tech] += (
+            gen_new[tech]*(chosen_new.metrics[tech] - chosen_exist.metrics[tech])/inputs.CRF +
+            (gen_future[tech] + gen_exist[tech])*chosen_exist.metrics[tech]*tiny_step_yrs
+          )/1e3;
+        }
       }
 
       //If this is the first iteration, reset the start year electricity price
@@ -767,8 +834,10 @@ function runTiniest(inputs) {
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
           tech_cost_out[tech].push(tech_cost[tech]);
+          tech_costm_out[tech].push(tech_costm[tech]);
           //Reset tech_cost after outputting.
           tech_cost[tech] = 0;
+          tech_costm[tech] = 0;
         }
       }
     }
@@ -776,6 +845,7 @@ function runTiniest(inputs) {
   return {year_labels: year_labels,
           tech_gen_out: tech_gen_out,
           tech_cost_out: tech_cost_out,
+          tech_costm_out: tech_costm_out,
           elecprice_out: elecprice_out,
           CO2_tot_out: CO2_tot_out};
 }
@@ -785,6 +855,7 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
   var first_tech = true;
   var metric_chosen, tech_chosen;
   var LCOEs = {};
+  var metrics = {};
   for(var tech in inputs.LCOE_new){
     if(new_or_exist == 'exist' && gen_future[tech] + gen_exist[tech] <= 0) { continue;}
     //Use last step's market share for value factor calculation
@@ -808,8 +879,6 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
     LCOE += CO2_price * inputs.CO2_emission[tech];
     //Save LCOEs[tech] for output
     LCOEs[tech] = LCOE;
-    //Still output LCOE for exlcuded techs
-    if(exclude_techs.includes(tech)) { continue;}
     //Calculate metric and keep track of the chosen metric and corresponding tech.
     if (inputs.metric_comp == 'PLCOE' || elecprice == false){
       var metric = LCOE/value_factor;
@@ -818,6 +887,8 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
     } else if (inputs.metric_comp == 'LCOE'){
       var metric = LCOE;
     }
+    metrics[tech] = metric;
+    if(exclude_techs.includes(tech)) { continue;}
     if (first_tech == true){
       metric_chosen = metric;
       tech_chosen = tech;
@@ -830,19 +901,22 @@ function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, 
       tech_chosen = tech;
     }
   }
-  return {metric: metric_chosen, tech: tech_chosen, LCOEs: LCOEs};
+  return {metric: metric_chosen, tech: tech_chosen, LCOEs: LCOEs, metrics: metrics};
 }
 
 function updateCharts(outputs){
   generationChart.data.labels = outputs.year_labels;
   costChart.data.labels = outputs.year_labels;
+  costmChart.data.labels = outputs.year_labels;
   for(var n = 0; n < inputs.full_techs.length; n++){
     var tech = inputs.full_techs[n];
     generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
     costChart.data.datasets[n].data = outputs.tech_cost_out[tech];
+    costmChart.data.datasets[n].data = outputs.tech_costm_out[tech];
   }
   generationChart.update() //it didn't seem to work to update within runTiniest(), perhaps because it was updating too fast.
   costChart.update()
+  costmChart.update()
   CO2Chart.data.labels = outputs.year_labels;
   CO2Chart.data.datasets[0].data = outputs.CO2_tot_out;
   CO2Chart.update()
@@ -906,6 +980,9 @@ $('#download-data').click(function(){
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(CO2Chart.data.datasets[0].data))
   costChart.data.datasets.forEach(function(value, index, array){
     rows.push(['Cost (Bil $/yr)', value.label].concat(value.data))
+  });
+  costmChart.data.datasets.forEach(function(value, index, array){
+    rows.push(['Metric-based Cost (Bil $/yr)', value.label].concat(value.data))
   });
   var csvContent = "data:text/csv;charset=utf-8,"
     + rows.map(e => e.join(",")).join("\n");
