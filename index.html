@@ -213,14 +213,15 @@ var inputs = {
   metric_comp: 'PLCOE', //'LCOE' is levelized cost of electricity, 'SLCOE' is system LCOE, 'PLCOE' is profitability-adjusted LCOE.
   cost_basis: 'LCOE', //Use either 'LCOE' to base costs on LCOE alone, 'metric_comp' to base costs on the metric of competition, or 'mixed' to use LCOE for existing and metric_comp for new techs.
   load: [4011, 4363, 4764, 5317], //TWh per year
-  full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind', 'PV', 'Other'],
+  full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind_Ons', 'Wind_Ofs','PV', 'Other'],
   gas_techs: ['Gas_CC', 'Gas_CCS'],
   colors: {
     Nuclear: '#820000',
     Coal: '#222222',
     Gas_CC: '#52216B',
     Gas_CCS: '#5E1688',
-    Wind: '#00B6EF',
+    Wind_Ons: '#00B6EF',
+    Wind_Ofs: '#106BA7',
     PV: '#FFC903',
     Other: '#ff69b4',
   },
@@ -229,7 +230,8 @@ var inputs = {
     Coal: [722, 898, 734, 425],
     Gas_CC: [1570, 964, 695, 403], //Included gas_CT
     Gas_CCS: [0, 0, 0, 0],
-    Wind: [372, 370, 270, 0], //onshore plus offshore. note that all wind is gone before 2050.
+    Wind_Ons: [372, 370, 270, 0], //note that all wind is gone before 2050.
+    Wind_Ofs: [0, 0, 0, 0],
     PV: [171, 195, 227, 135], //upv, dupv, distpv. I included distributed pv growth here as exogenous
     Other: [406, 396, 387, 377], //bio, canada, csp, geo, hydro, lfill_gas, o_g_s, corrected to equal load in 2020 tho...
   },
@@ -238,15 +240,17 @@ var inputs = {
     Coal: [72, 70, 69, 67], //High CF
     Gas_CC: [12, 11, 11, 11], //High CF, no fuel
     Gas_CCS: [29, 26, 25, 24], //High CF, no fuel
-    Wind: [31, 24, 22, 19], //class 4
+    Wind_Ons: [31, 24, 22, 19], //class 4
+    Wind_Ofs: [81, 52, 44, 39], //class 4
     PV: [31, 18, 16, 14], //Kansas City
   },
-  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs
+  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
     Nuclear: [24, 24, 24, 24],
-    Coal: [30, 29, 29, 29], //High CF
+    Coal: [29, 29, 29, 29], //High CF
     Gas_CC: [4, 4, 4, 4], //High CF, no fuel
     Gas_CCS: [9, 9, 9, 9], //High CF, no fuel
-    Wind: [9, 9, 9, 9], //class 4
+    Wind_Ons: [9, 9, 9, 9], //class 4
+    Wind_Ofs: [15, 15, 15, 15], //class 1
     PV: [7, 7, 7, 7], //Kansas City
   },
   // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
@@ -262,7 +266,8 @@ var inputs = {
     Coal: 0,
     Gas_CC: 0,
     Gas_CCS: 0,
-    Wind: 0.674,
+    Wind_Ons: 0.674,
+    Wind_Ofs: 4.88,
     PV: 0.803,
   },
   NG_heatrate: { //Natural gas heat rate (MMBtu/MWh)
@@ -270,7 +275,8 @@ var inputs = {
     Coal: 0,
     Gas_CC: 6.4,
     Gas_CCS: 7.5,
-    Wind: 0,
+    Wind_Ons: 0,
+    Wind_Ofs: 0,
     PV: 0,
     Other: 0,
   },
@@ -281,7 +287,8 @@ var inputs = {
     Coal: [.99, -.30], //copied from nuclear
     Gas_CC: [1.14, -0.60],
     Gas_CCS: [0.96, -0.20],
-    Wind: [0.83, -1.10],
+    Wind_Ons: [0.83, -1.10],
+    Wind_Ofs: [0.88, -1.43],
     PV: [0.83, -1.14], //Advanced battery: [0.86, -0.96], Conservative battery: [0.91, -1.86]
   },
   // value_factor: { //carbon tax cases
@@ -297,7 +304,8 @@ var inputs = {
     Coal: 0.86,
     Gas_CC: 0.34,
     Gas_CCS: 0.04,
-    Wind: 0,
+    Wind_Ons: 0,
+    Wind_Ofs: 0,
     PV: 0,
     Other: 0,
   },
@@ -968,8 +976,8 @@ $('#run-analysis-button').click(function(){
         inputs_cp.LCOE_new.PV[i] *= pv_mult_interp;
         inputs_cp.LCOE_exist.PV[i] *= pv_mult_interp;
         var wind_mult_interp = (wind_mult - 1)/(inputs.num_time_steps - 1)*i + 1;
-        inputs_cp.LCOE_new.Wind[i] *= wind_mult_interp;
-        inputs_cp.LCOE_exist.Wind[i] *= wind_mult_interp;
+        inputs_cp.LCOE_new.Wind_Ons[i] *= wind_mult_interp;
+        inputs_cp.LCOE_exist.Wind_Ons[i] *= wind_mult_interp;
       }
       var results_range = runTiniest(inputs_cp);
       var CO2_cum = 0;
@@ -977,7 +985,7 @@ $('#run-analysis-button').click(function(){
         CO2_cum += results_range.CO2_tot_out[i];
       }
       result_range_out.PV_LCOE_end.push(inputs_cp.LCOE_new.PV[inputs.num_time_steps - 1]);
-      result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind[inputs.num_time_steps - 1]);
+      result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind_Ons[inputs.num_time_steps - 1]);
       result_range_out.CO2_cum.push(CO2_cum);
       result_range_out.CO2_end.push(results_range.CO2_tot_out[results_range.CO2_tot_out.length - 1]);
     }
@@ -1008,7 +1016,7 @@ $('#run-analysis-button').click(function(){
       t: 100
     },
     title: {
-      text:'2050 CO2 emissions vs Wind/PV LCOE',
+      text:'2050 CO2 emissions vs Wind_Ons/PV LCOE',
     },
     scene: {
       xaxis: {
@@ -1023,7 +1031,7 @@ $('#run-analysis-button').click(function(){
       },
       yaxis: {
         title: {
-          text: 'Wind 2050 LCOE',
+          text: 'Wind_Ons 2050 LCOE',
           font: {
             family: 'Courier New, monospace',
             size: 18,
