@@ -197,7 +197,8 @@ h5{
       <div class="chart-container">
         <canvas id="costChart"></canvas>
       </div>
-      <div id='rangeChart'></div>
+      <div id='CO2RangeChart'></div>
+      <div id='VRERangeChart'></div>
     </div>
   </div>
 </div>
@@ -662,6 +663,7 @@ function runTiniest(inputs) {
     tech_cost_out[tech] = [0];
     tech_cost[tech] = 0;
   }
+  var tot_load_out = [inputs.load[0]];
   var CO2_tot_out = [0];
   for (var tech of inputs.full_techs){
     CO2_tot_out[0] += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
@@ -794,6 +796,7 @@ function runTiniest(inputs) {
       if (year % 1 == 0){
         year_labels.push(year);
         CO2_tot_out.push(CO2_tot);
+        tot_load_out.push(tot_load);
         elecprice_out.push(chosen_new.metric);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
@@ -808,7 +811,9 @@ function runTiniest(inputs) {
           tech_gen_out: tech_gen_out,
           tech_cost_out: tech_cost_out,
           elecprice_out: elecprice_out,
-          CO2_tot_out: CO2_tot_out};
+          CO2_tot_out: CO2_tot_out,
+          tot_load_out: tot_load_out,
+          };
 }
 
 function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, exclude_techs, elecprice){
@@ -966,7 +971,7 @@ $('#run-analysis-button').click(function(){
   //https://stackoverflow.com/questions/779379/why-is-settimeoutfn-0-sometimes-useful
   //https://stackoverflow.com/questions/749666/show-a-javascript-loader-image-while-function-is-executing
   setTimeout(function() {
-  var result_range_out = {CO2_cum: [], CO2_end: [], PV_LCOE_end: [], Wind_LCOE_end: []};
+  var result_range_out = {CO2_cum: [], CO2_end: [], VRE_end: [], PV_LCOE_end: [], Wind_LCOE_end: []};
   for(var pv_mult = mult_start; pv_mult >= mult_end; pv_mult -= mult_step){
     for(var wind_mult = mult_start; wind_mult >= mult_end; wind_mult -= mult_step){
       var inputs_cp = JSON.parse(JSON.stringify(inputs));
@@ -979,15 +984,20 @@ $('#run-analysis-button').click(function(){
         inputs_cp.LCOE_new.Wind_Ons[i] *= wind_mult_interp;
         inputs_cp.LCOE_exist.Wind_Ons[i] *= wind_mult_interp;
       }
-      var results_range = runTiniest(inputs_cp);
+      var out = runTiniest(inputs_cp);
       var CO2_cum = 0;
-      for(var i = 0; i < results_range.CO2_tot_out.length; i++){
-        CO2_cum += results_range.CO2_tot_out[i];
+      for(var i = 0; i < out.CO2_tot_out.length; i++){
+        CO2_cum += out.CO2_tot_out[i];
       }
-      result_range_out.PV_LCOE_end.push(inputs_cp.LCOE_new.PV[inputs.num_time_steps - 1]);
-      result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind_Ons[inputs.num_time_steps - 1]);
+      var final_vre_share = (out.tech_gen_out.PV.slice(-1)[0] +
+                             out.tech_gen_out.Wind_Ons.slice(-1)[0] +
+                             out.tech_gen_out.Wind_Ofs.slice(-1)[0]
+                            )/out.tot_load_out.slice(-1)[0];
+      result_range_out.PV_LCOE_end.push(inputs_cp.LCOE_new.PV.slice(-1)[0]);
+      result_range_out.Wind_LCOE_end.push(inputs_cp.LCOE_new.Wind_Ons.slice(-1)[0]);
       result_range_out.CO2_cum.push(CO2_cum);
-      result_range_out.CO2_end.push(results_range.CO2_tot_out[results_range.CO2_tot_out.length - 1]);
+      result_range_out.CO2_end.push(out.CO2_tot_out.slice(-1)[0]);
+      result_range_out.VRE_end.push(final_vre_share);
     }
   }
 
@@ -1005,7 +1015,6 @@ $('#run-analysis-button').click(function(){
     type: 'scatter3d'
   };
 
-  var data = [trace1];
   var layout = {
     width: 700,
     height: 700,
@@ -1053,7 +1062,16 @@ $('#run-analysis-button').click(function(){
     }
   };
 
-  Plotly.newPlot('rangeChart', data, layout);
+  Plotly.newPlot('CO2RangeChart', [trace1], layout);
+
+  var vre_share_trace = JSON.parse(JSON.stringify(trace1));
+  vre_share_trace.z = result_range_out.VRE_end;
+  var vre_share_layout = JSON.parse(JSON.stringify(layout));
+  vre_share_layout.title.text = '2050 VRE share vs Wind_Ons/PV LCOE';
+  vre_share_layout.scene.zaxis.title.text = '2050 VRE share';
+  vre_share_layout.scene.zaxis.range = [0, 1];
+  Plotly.newPlot('VRERangeChart', [vre_share_trace], vre_share_layout);
+
   $('#run-analysis-spinner').hide();
   $('#run-analysis-prefix').text('Done running TINIEST ');
   $('#run-analysis-suffix').text(' times in ' + String((Date.now() - start)/1000) + ' seconds. Scroll down to see results.');
