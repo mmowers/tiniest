@@ -287,12 +287,12 @@ var inputs = {
   NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS natural gas supply curve.
   NG_beta: 0.49, //$/MMBtu per Quad, based on ReEDS natural gas supply curve.
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
-    Nuclear: [.99, -.30],
-    Coal: [.99, -.30], //copied from nuclear
-    Gas_CC: [1.14, -0.60],
-    Gas_CCS: [0.96, -0.20],
-    Wind_Ons: [0.83, -1.10],
-    Wind_Ofs: [0.88, -1.43],
+    Nuclear: [.9, 0],
+    Coal: [.9, 0], //copied from nuclear
+    Gas_CC: [0.89, 0],
+    Gas_CCS: [0.92, 0],
+    Wind_Ons: [0.82, -1.08],
+    Wind_Ofs: [0.82, -1.29],
     PV: [0.83, -1.14], //Advanced battery: [0.86, -0.96], Conservative battery: [0.91, -1.86]
   },
   // value_factor: { //carbon tax cases
