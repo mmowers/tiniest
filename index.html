@@ -216,7 +216,7 @@ var inputs = {
   CRF: .07,
   metric_comp: 'PLCOE', //'LCOE' is levelized cost of electricity, 'SLCOE' is system LCOE, 'PLCOE' is profitability-adjusted LCOE.
   cost_basis: 'LCOE', //Use either 'LCOE' to base costs on LCOE alone, 'metric_comp' to base costs on the metric of competition, or 'mixed' to use LCOE for existing and metric_comp for new techs.
-  load: [4011, 4363, 4764, 5317], //TWh per year
+  load: [3961, 4363, 4764, 5317], //TWh per year, 2020 adjusted to be equal to existing gen
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind_Ons', 'Wind_Ofs','PV', 'Other'],
   gas_techs: ['Gas_CC', 'Gas_CCS'],
   colors: {
@@ -229,15 +229,15 @@ var inputs = {
     PV: '#FFC903',
     Other: '#ff69b4',
   },
-  existing_gen: { //TWh of init, new1 and new2 techs, from reference run
+  existing_gen: { //From ReEDS reference run, init, new1 and new2 techs. 2020 uses generation, and retirements of capacity scale this.
     Nuclear: [770, 719, 598, 377],
-    Coal: [722, 898, 734, 425],
-    Gas_CC: [1570, 964, 695, 403], //Included gas_CT
+    Coal: [727, 551, 517, 312],
+    Gas_CC: [1563, 1539, 1515, 1432],
     Gas_CCS: [0, 0, 0, 0],
-    Wind_Ons: [372, 370, 270, 0], //note that all wind is gone before 2050.
+    Wind_Ons: [370, 360, 240, 0],
     Wind_Ofs: [0, 0, 0, 0],
-    PV: [171, 195, 227, 135], //upv, dupv, distpv. I included distributed pv growth here as exogenous
-    Other: [406, 396, 387, 377], //bio, canada, csp, geo, hydro, lfill_gas, o_g_s, corrected to equal load in 2020 tho...
+    PV: [154, 154, 153, 0], //Utility and Distributed gen in 2020, but only utility scales capacity
+    Other: [377, 377, 377, 377], //Hydro and Other RE in 2020, constant over time
   },
   LCOE_new: { //2018$/MWh, ATB 2020 Moderate
     Nuclear: [75, 73, 70, 66],
