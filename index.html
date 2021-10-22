@@ -672,6 +672,7 @@ function runTiniest(inputs) {
     CO2_tot_out[0] += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
   }
   var elecprice_out = [0];
+  var gas_price_out = [0];
 
   //Now initialize some variables
   var years = []
@@ -794,6 +795,7 @@ function runTiniest(inputs) {
       //If this is the first iteration, reset the start year electricity price
       if (i == 0 && j == 1){
         elecprice_out[0] = chosen_new.metric;
+        gas_price_out[0] = gas_price;
       }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
@@ -801,6 +803,7 @@ function runTiniest(inputs) {
         CO2_tot_out.push(CO2_tot);
         tot_load_out.push(tot_load);
         elecprice_out.push(chosen_new.metric);
+        gas_price_out.push(gas_price);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
           tech_cost_out[tech].push(tech_cost[tech]);
@@ -814,6 +817,7 @@ function runTiniest(inputs) {
           tech_gen_out: tech_gen_out,
           tech_cost_out: tech_cost_out,
           elecprice_out: elecprice_out,
+          gas_price_out: gas_price_out,
           CO2_tot_out: CO2_tot_out,
           tot_load_out: tot_load_out,
           };
@@ -943,6 +947,7 @@ $('#download-data').click(function(){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
   rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
+  rows.push(['Gas Price (2018$/MMBtu)', ''].concat(outputs.gas_price_out))
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Cost (Bil $/yr)', tech].concat(outputs.tech_cost_out[tech]))
