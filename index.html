@@ -938,14 +938,14 @@ $(document).on('input', '#CO2_price-start_level', function(){
 $('#CO2_price-slider-val').text($('#CO2_price-start_level').val());
 
 $('#download-data').click(function(){
-  var rows = [['',''].concat(generationChart.data.labels)]
-  generationChart.data.datasets.forEach(function(value, index, array){
-    rows.push(['Gen (TWh/yr)', value.label].concat(value.data))
+  var rows = [['',''].concat(outputs.year_labels)]
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
-  rows.push(['Elec Price (2018$/MWh)', ''].concat(elecpriceChart.data.datasets[0].data))
-  rows.push(['CO2 Emissions (MMton/yr)', ''].concat(CO2Chart.data.datasets[0].data))
-  costChart.data.datasets.forEach(function(value, index, array){
-    rows.push(['Cost (Bil $/yr)', value.label].concat(value.data))
+  rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
+  rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['Cost (Bil $/yr)', tech].concat(outputs.tech_cost_out[tech]))
   });
   var csvContent = "data:text/csv;charset=utf-8,"
     + rows.map(e => e.join(",")).join("\n");
