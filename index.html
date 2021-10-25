@@ -284,8 +284,8 @@ var inputs = {
     PV: 0,
     Other: 0,
   },
-  NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS natural gas supply curve.
-  NG_beta: 0.49, //$/MMBtu per Quad, based on ReEDS natural gas supply curve.
+  NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2020_reference.csv (2004$) and ng_demand_AEO_2020_reference.csv
+  NG_beta: 0.49, //$/MMBtu per Quad, based on ReEDS national beta of 0.1352 2004$/MMBtu (from b_inputs.gms) and regional beta in cd_beta0.csv
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.9, 0],
     Coal: [.9, 0], //copied from nuclear
