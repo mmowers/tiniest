@@ -966,6 +966,8 @@ $('#download-data').click(function(){
   rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
   rows.push(['Gas Price (2018$/MMBtu)', ''].concat(outputs.gas_price_out))
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
+  rows.push(['Load (TWh/yr)', ''].concat(outputs.tot_load_out))
+
   var csvContent = "data:text/csv;charset=utf-8,"
     + rows.map(e => e.join(",")).join("\n");
   var encodedUri = encodeURI(csvContent);
