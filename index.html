@@ -659,10 +659,14 @@ function runTiniest(inputs) {
   //First initialize outputs
   var year_labels = [inputs.start_year];
   var tech_gen_out = {};
+  var tech_gen_exist_out = {}; //Generation from techs built before 2020
+  var tech_gen_future_out = {}; //Generation from techs built after 2020
   var tech_cost_out = {};
   var tech_cost = {};
   for (var tech of inputs.full_techs){
     tech_gen_out[tech] = [inputs.existing_gen[tech][0]];
+    tech_gen_exist_out[tech] = [inputs.existing_gen[tech][0]];
+    tech_gen_future_out[tech] = [0];
     tech_cost_out[tech] = [0];
     tech_cost[tech] = 0;
   }
@@ -680,9 +684,9 @@ function runTiniest(inputs) {
     years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
   }
   var tiny_step_yrs = (inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1)/inputs.num_tiny_steps;
-  var gen_future = {};
-  var gen_exist = {};
-  var gen_new = {};
+  var gen_future = {}; //Generation from techs built after 2020
+  var gen_exist = {}; //Generation from techs built before 2020
+  var gen_new = {}; //Generation from techs built in the current iteration.
   for(var tech of inputs.full_techs){
     gen_exist[tech] = inputs.existing_gen[tech][0];
     gen_future[tech] = 0;
@@ -792,7 +796,7 @@ function runTiniest(inputs) {
         }
       }
 
-      //If this is the first iteration, reset the start year electricity price
+      //If this is the first iteration, reset the start year prices
       if (i == 0 && j == 1){
         elecprice_out[0] = chosen_new.metric;
         gas_price_out[0] = gas_price;
@@ -806,6 +810,8 @@ function runTiniest(inputs) {
         gas_price_out.push(gas_price);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
+          tech_gen_exist_out[tech].push(gen_exist[tech]);
+          tech_gen_future_out[tech].push(gen_future[tech]);
           tech_cost_out[tech].push(tech_cost[tech]);
           //Reset tech_cost after outputting.
           tech_cost[tech] = 0;
@@ -815,6 +821,8 @@ function runTiniest(inputs) {
   }
   return {year_labels: year_labels,
           tech_gen_out: tech_gen_out,
+          tech_gen_exist_out: tech_gen_exist_out,
+          tech_gen_future_out: tech_gen_future_out,
           tech_cost_out: tech_cost_out,
           elecprice_out: elecprice_out,
           gas_price_out: gas_price_out,
@@ -945,6 +953,12 @@ $('#download-data').click(function(){
   var rows = [['',''].concat(outputs.year_labels)]
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['Gen pre-2020 techs (TWh/yr)', tech].concat(outputs.tech_gen_exist_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['Gen post-2020 techs (TWh/yr)', tech].concat(outputs.tech_gen_future_out[tech]))
   });
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Cost (Bil $/yr)', tech].concat(outputs.tech_cost_out[tech]))
