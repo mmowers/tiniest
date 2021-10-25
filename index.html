@@ -663,12 +663,20 @@ function runTiniest(inputs) {
   var tech_gen_future_out = {}; //Generation from techs built after 2020
   var tech_cost_out = {};
   var tech_cost = {};
+  var metrics_new_out = {};
+  var metrics_exist_out = {};
+  var LCOEs_new_out = {};
+  var LCOEs_exist_out = {};
   for (var tech of inputs.full_techs){
     tech_gen_out[tech] = [inputs.existing_gen[tech][0]];
     tech_gen_exist_out[tech] = [inputs.existing_gen[tech][0]];
     tech_gen_future_out[tech] = [0];
     tech_cost_out[tech] = [0];
     tech_cost[tech] = 0;
+    metrics_new_out[tech] = [0];
+    metrics_exist_out[tech] = [0];
+    LCOEs_new_out[tech] = [0];
+    LCOEs_exist_out[tech] = [0];
   }
   var tot_load_out = [inputs.load[0]];
   var CO2_tot_out = [0];
@@ -800,6 +808,12 @@ function runTiniest(inputs) {
       if (i == 0 && j == 1){
         elecprice_out[0] = chosen_new.metric;
         gas_price_out[0] = gas_price;
+        for (var tech of inputs.full_techs){
+          metrics_new_out[tech][0] = chosen_new.metrics[tech];
+          metrics_exist_out[tech][0] = chosen_exist.metrics[tech];
+          LCOEs_new_out[tech][0] = chosen_new.LCOEs[tech];
+          LCOEs_exist_out[tech][0] = chosen_exist.LCOEs[tech];
+        }
       }
       //now update the chart data if we are on the year
       if (year % 1 == 0){
@@ -815,6 +829,10 @@ function runTiniest(inputs) {
           tech_cost_out[tech].push(tech_cost[tech]);
           //Reset tech_cost after outputting.
           tech_cost[tech] = 0;
+          metrics_new_out[tech].push(chosen_new.metrics[tech]);
+          metrics_exist_out[tech].push(chosen_exist.metrics[tech]);
+          LCOEs_new_out[tech].push(chosen_new.LCOEs[tech]);
+          LCOEs_exist_out[tech].push(chosen_exist.LCOEs[tech]);
         }
       }
     }
@@ -824,6 +842,10 @@ function runTiniest(inputs) {
           tech_gen_exist_out: tech_gen_exist_out,
           tech_gen_future_out: tech_gen_future_out,
           tech_cost_out: tech_cost_out,
+          metrics_new_out: metrics_new_out,
+          metrics_exist_out: metrics_exist_out,
+          LCOEs_new_out: LCOEs_new_out,
+          LCOEs_exist_out: LCOEs_exist_out,
           elecprice_out: elecprice_out,
           gas_price_out: gas_price_out,
           CO2_tot_out: CO2_tot_out,
@@ -962,6 +984,18 @@ $('#download-data').click(function(){
   });
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Cost (Bil $/yr)', tech].concat(outputs.tech_cost_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push([inputs.metric_comp + ' new', tech].concat(outputs.metrics_new_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push([inputs.metric_comp + ' exist', tech].concat(outputs.metrics_exist_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['LCOE new ($/MWh)', tech].concat(outputs.LCOEs_new_out[tech]))
+  });
+  inputs.full_techs.forEach(function(tech, index, array){
+    rows.push(['LCOE exist ($/MWh)', tech].concat(outputs.LCOEs_exist_out[tech]))
   });
   rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
   rows.push(['Gas Price (2018$/MMBtu)', ''].concat(outputs.gas_price_out))
