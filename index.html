@@ -248,23 +248,24 @@ var inputs = {
     Wind_Ofs: [81, 52, 44, 39], //class 4
     PV: [29, 17, 15, 13], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
-  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
-    Nuclear: [24, 24, 24, 24],
-    Coal: [29, 29, 29, 29], //High CF
-    Gas_CC: [4, 4, 4, 4], //High CF, no fuel
-    Gas_CCS: [9, 9, 9, 9], //High CF, no fuel
-    Wind_Ons: [9, 9, 9, 9], //class 4
-    Wind_Ofs: [15, 15, 15, 15], //class 4
-    PV: [7, 7, 7, 7], //Kansas City
-  },
-  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs
-  //   Nuclear: [9, 9, 10, 10],
-  //   Coal: [22, 21, 21, 21],
-  //   Gas_CC: [19, 25, 26, 28],
-  //   Gas_CCS: [25, 33, 34, 36],
-  //   Wind: [0, 0, 0, 0],
-  //   PV: [0, 0, 0, 0],
+  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
+  //   Nuclear: [24, 24, 24, 24],
+  //   Coal: [29, 29, 29, 29], //High CF
+  //   Gas_CC: [4, 4, 4, 4], //High CF, no fuel
+  //   Gas_CCS: [9, 9, 9, 9], //High CF, no fuel
+  //   Wind_Ons: [9, 9, 9, 9], //class 4
+  //   Wind_Ofs: [15, 15, 15, 15], //class 4
+  //   PV: [7, 7, 7, 7], //Kansas City
   // },
+  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
+    Nuclear: [10, 10, 10, 10],
+    Coal: [22, 21, 21, 21], //High CF
+    Gas_CC: [2, 2, 2, 2], //High CF, no fuel
+    Gas_CCS: [6, 6, 6, 6], //High CF, no fuel
+    Wind_Ons: [0, 0, 0, 0],
+    Wind_Ofs: [0, 0, 0, 0],
+    PV: [0, 0, 0, 0],
+  },
   LCOE_slope: { //2018$/MWh per petawatt-hour of generation, from reV outputs
     Nuclear: 0,
     Coal: 0,
@@ -285,7 +286,7 @@ var inputs = {
     Other: 0,
   },
   NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2020_reference.csv (2004$) and ng_demand_AEO_2020_reference.csv
-  NG_beta: 0.49, //$/MMBtu per Quad, based on ReEDS national beta of 0.1352 2004$/MMBtu (from b_inputs.gms) and regional beta in cd_beta0.csv
+  NG_beta: 0.22, //$/MMBtu per Quad, based on ReEDS national beta of 0.1352 2004$/MMBtu (from b_inputs.gms) and regional beta in cd_beta0.csv
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.9, 0],
     Coal: [.9, 0], //copied from nuclear
@@ -685,6 +686,7 @@ function runTiniest(inputs) {
   }
   var elecprice_out = [0];
   var gas_price_out = [0];
+  var gas_use_out = [0];
 
   //Now initialize some variables
   var years = []
@@ -808,6 +810,7 @@ function runTiniest(inputs) {
       if (i == 0 && j == 1){
         elecprice_out[0] = chosen_new.metric;
         gas_price_out[0] = gas_price;
+        gas_use_out[0] = gas_use;
         for (var tech of inputs.full_techs){
           metrics_new_out[tech][0] = chosen_new.metrics[tech];
           metrics_exist_out[tech][0] = chosen_exist.metrics[tech];
@@ -822,6 +825,7 @@ function runTiniest(inputs) {
         tot_load_out.push(tot_load);
         elecprice_out.push(chosen_new.metric);
         gas_price_out.push(gas_price);
+        gas_use_out.push(gas_use);
         for (var tech of inputs.full_techs){
           tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
           tech_gen_exist_out[tech].push(gen_exist[tech]);
@@ -848,6 +852,7 @@ function runTiniest(inputs) {
           LCOEs_exist_out: LCOEs_exist_out,
           elecprice_out: elecprice_out,
           gas_price_out: gas_price_out,
+          gas_use_out: gas_use_out,
           CO2_tot_out: CO2_tot_out,
           tot_load_out: tot_load_out,
           };
@@ -977,6 +982,7 @@ $('#download-data').click(function(){
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
   rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
   rows.push(['Gas Price (2018$/MMBtu)', ''].concat(outputs.gas_price_out))
+  rows.push(['Gas Use (Quads)', ''].concat(outputs.gas_use_out))
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
