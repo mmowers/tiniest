@@ -363,11 +363,8 @@ for (var year of years){
 //Load
 var load_str = '<tr>';
 for (var i = 0; i < inputs.num_time_steps; i++){
-  if (i == 0){
     load_str += '<td>' + inputs.load[i]+ '</td>';
-  } else {
-    load_str += '<td><input type="text" size="6" id="load-' + i + '" value="' + inputs.load[i]+ '"></td>';
-  }
+    // load_str += '<td><input type="text" size="6" id="load-' + i + '" value="' + inputs.load[i]+ '"></td>';
 }
 load_str += '</tr>';
 $('#load-table').append(load_str);
