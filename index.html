@@ -248,6 +248,15 @@ var inputs = {
     Wind_Ofs: [81, 52, 44, 39], //class 4
     PV: [29, 17, 15, 13], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
+  // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
+  //   Nuclear: [80, 76, 73, 70],
+  //   Coal: [67, 62, 59, 57], //High CF, plugging ATB 2021 heat rate, overnight capital cost, fixed and variable O&M into ATB 2020 spreadsheet now because the ATB 2021 spreadsheet doesn't have LCOE.
+  //   Gas_CC: [13, 12, 12, 12], //High CF, no fuel, plugging ATB 2021 heat rate, overnight capital cost, fixed and variable O&M into ATB 2020 spreadsheet now because the ATB 2021 spreadsheet doesn't have LCOE.
+  //   Gas_CCS: [32, 29, 26, 25], //High CF, no fuel, see note above
+  //   Wind_Ons: [29, 21, 19, 17], //class 4
+  //   Wind_Ofs: [75, 51, 43, 39], //class 3
+  //   PV: [35, 19, 17, 15], //class 5, with 10% ITC.
+  // },
   LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
     Nuclear: [24, 24, 24, 24],
     Coal: [26, 26, 26, 26], //High CF
@@ -286,6 +295,7 @@ var inputs = {
     Other: 0,
   },
   NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2020_reference.csv (2004$) and ng_demand_AEO_2020_reference.csv
+  // NG_alpha: [-.27, 1.21, 1.19, 1.01], //2019$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2021_reference.csv (2004$) and ng_demand_AEO_2021_reference.csv
   NG_beta: 0.22, //$/MMBtu per Quad, based on ReEDS national beta of 0.1352 2004$/MMBtu (from b_inputs.gms) and regional beta in cd_beta0.csv
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.9, 0],
@@ -296,14 +306,6 @@ var inputs = {
     Wind_Ofs: [0.85, -1.50],
     PV: [0.88, -1.30], //Advanced battery: [0.86, -0.96], Conservative battery: [0.91, -1.86]
   },
-  // value_factor: { //carbon tax cases
-  //   Nuclear: [1.03, -.22],
-  //   Coal: [1.03, -.22],
-  //   Gas_CC: [1.44, -1.23],
-  //   Gas_CCS: [1.03, -.32],
-  //   Wind: [0.70, -.71],
-  //   PV: [0.85, -.98],
-  // },
   CO2_emission: { //metric tons per MWh, ATB 2020 Moderate
     Nuclear: 0,
     Coal: 0.86,
