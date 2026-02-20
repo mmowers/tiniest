@@ -210,7 +210,7 @@ h5{
 "use strict";
 var inputs = {
   num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
-  num_tiny_steps: 100, //This will be the tiny time steps within the larger time steps
+  num_tiny_steps: 100, //This is the number of energy-dispatch steps solved within each year
   start_year: 2020,
   end_year: 2050,
   CRF: .07,
@@ -265,6 +265,7 @@ var inputs = {
     Wind_Ons: [9, 9, 9, 9], //class 4
     Wind_Ofs: [15, 15, 15, 15], //class 4
     PV: [7, 7, 7, 7], //Kansas City
+    Other: [0, 0, 0, 0],
   },
   // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
   //   Nuclear: [10, 10, 10, 10],
@@ -283,6 +284,7 @@ var inputs = {
     Wind_Ons: 0.674,
     Wind_Ofs: 4.88,
     PV: 0.803,
+    Other: 0,
   },
   NG_heatrate: { //Natural gas heat rate (MMBtu/MWh)
     Nuclear: 0,
@@ -305,6 +307,7 @@ var inputs = {
     Wind_Ons: [0.82, -1.08],
     Wind_Ofs: [0.85, -1.50],
     PV: [0.88, -1.30], //Advanced battery: [0.86, -0.96], Conservative battery: [0.91, -1.86]
+    Other: [0.9, 0],
   },
   // value_factor: { //carbon tax cases
   //   Nuclear: [1.03, -.22],
@@ -393,7 +396,6 @@ for (var tech of inputs.full_techs){
   if(inputs.gas_techs.includes(tech)){
     no_fuel_str += ' (no fuel)';
   }
-  if (!(tech in inputs.LCOE_new)){continue;}
   //Existing gen
   var existing_gen_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
@@ -401,35 +403,43 @@ for (var tech of inputs.full_techs){
   }
   existing_gen_str += '</tr>';
   $('#existing_gen-table').append(existing_gen_str);
-  //New tech LCOE
-  var lcoe_new_str = '<tr><td>' + tech + no_fuel_str + '</td>';
-  for (var i = 0; i < inputs.num_time_steps; i++){
-    lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+  if (tech in inputs.LCOE_new){
+    //New tech LCOE
+    var lcoe_new_str = '<tr><td>' + tech + no_fuel_str + '</td>';
+    for (var i = 0; i < inputs.num_time_steps; i++){
+      lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+    }
+    lcoe_new_str += '</tr>';
+    $('#LCOE_new-table').append(lcoe_new_str);
   }
-  lcoe_new_str += '</tr>';
-  $('#LCOE_new-table').append(lcoe_new_str);
-  //Existing tech LCOE
-  var lcoe_exist_str = '<tr><td>' + tech + no_fuel_str + '</td>';
-  for (var i = 0; i < inputs.num_time_steps; i++){
-    lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
+  if (tech in inputs.LCOE_exist){
+    //Existing tech LCOE
+    var lcoe_exist_str = '<tr><td>' + tech + no_fuel_str + '</td>';
+    for (var i = 0; i < inputs.num_time_steps; i++){
+      lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
+    }
+    lcoe_exist_str += '</tr>';
+    $('#LCOE_exist-table').append(lcoe_exist_str);
   }
-  lcoe_exist_str += '</tr>';
-  $('#LCOE_exist-table').append(lcoe_exist_str);
-  //LCOE Slope
-  var lcoe_slope_str = '<tr><td>' + tech + '</td>';
-  lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
-  $('#LCOE_slope-table').append(lcoe_slope_str);
+  if (tech in inputs.LCOE_slope){
+    //LCOE Slope
+    var lcoe_slope_str = '<tr><td>' + tech + '</td>';
+    lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
+    $('#LCOE_slope-table').append(lcoe_slope_str);
+  }
   //Natural gas heat rate
   var NG_heatrate_str = '<tr><td>' + tech + '</td>';
   NG_heatrate_str += '<td><input type="text" size="6" id="NG_heatrate-' + tech + '" value="' + inputs.NG_heatrate[tech] + '"></td></tr>';
   $('#NG_heatrate-table').append(NG_heatrate_str);
-  //Value Factor
-  var vf_str = '<tr><td>' + tech + '</td>';
-  for (var i = 0; i < 2; i++){
-    vf_str += '<td><input type="text" size="6" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
+  if (tech in inputs.value_factor){
+    //Value Factor
+    var vf_str = '<tr><td>' + tech + '</td>';
+    for (var i = 0; i < 2; i++){
+      vf_str += '<td><input type="text" size="6" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
+    }
+    vf_str += '</tr>';
+    $('#value_factor-table').append(vf_str);
   }
-  vf_str += '</tr>';
-  $('#value_factor-table').append(vf_str);
   //Emissions
   var CO2_emission_str = '<tr><td>' + tech + '</td>';
   CO2_emission_str += '<td><input type="text" size="6" id="CO2_emission-' + tech + '" value="' + inputs.CO2_emission[tech] + '"></td></tr>';
@@ -665,187 +675,177 @@ var elecpriceChart = new Chart(
 function runTiniest(inputs) {
 
   //First initialize outputs
-  var year_labels = [inputs.start_year];
+  var year_labels = [];
   var tech_gen_out = {};
   var tech_gen_exist_out = {}; //Generation from techs built before 2020
   var tech_gen_future_out = {}; //Generation from techs built after 2020
   var tech_cost_out = {};
-  var tech_cost = {};
   var metrics_new_out = {};
   var metrics_exist_out = {};
   var LCOEs_new_out = {};
   var LCOEs_exist_out = {};
   for (var tech of inputs.full_techs){
-    tech_gen_out[tech] = [inputs.existing_gen[tech][0]];
-    tech_gen_exist_out[tech] = [inputs.existing_gen[tech][0]];
-    tech_gen_future_out[tech] = [0];
-    tech_cost_out[tech] = [0];
-    tech_cost[tech] = 0;
-    metrics_new_out[tech] = [0];
-    metrics_exist_out[tech] = [0];
-    LCOEs_new_out[tech] = [0];
-    LCOEs_exist_out[tech] = [0];
+    tech_gen_out[tech] = [];
+    tech_gen_exist_out[tech] = [];
+    tech_gen_future_out[tech] = [];
+    tech_cost_out[tech] = [];
+    metrics_new_out[tech] = [];
+    metrics_exist_out[tech] = [];
+    LCOEs_new_out[tech] = [];
+    LCOEs_exist_out[tech] = [];
   }
-  var tot_load_out = [inputs.load[0]];
-  var CO2_tot_out = [0];
+  var tot_load_out = [];
+  var CO2_tot_out = [];
+  var elecprice_out = [];
+  var gas_price_out = [];
+  var gas_use_out = [];
+
+  var gen_future_stock = {}; //Generation from techs built after start year
+  var gen_exist_stock = {}; //Generation from techs built before start year
   for (var tech of inputs.full_techs){
-    CO2_tot_out[0] += inputs.CO2_emission[tech] * inputs.existing_gen[tech][0];
+    gen_exist_stock[tech] = inputs.existing_gen[tech][0];
+    gen_future_stock[tech] = 0;
   }
-  var elecprice_out = [0];
-  var gas_price_out = [0];
-  var gas_use_out = [0];
 
-  //Now initialize some variables
-  var years = []
-  for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
-    years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
-  }
-  var tiny_step_yrs = (inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1)/inputs.num_tiny_steps;
-  var gen_future = {}; //Generation from techs built after 2020
-  var gen_exist = {}; //Generation from techs built before 2020
-  var gen_new = {}; //Generation from techs built in the current iteration.
-  for(var tech of inputs.full_techs){
-    gen_exist[tech] = inputs.existing_gen[tech][0];
-    gen_future[tech] = 0;
-    gen_new[tech] = 0;
-  }
-  var tot_gen_future = 0;
-  var tot_load = inputs.load[0];
+  var elecprice = false;
+  var num_energy_steps = Math.max(1, inputs.num_tiny_steps);
 
-  for (var i = 0; i < inputs.num_time_steps - 1; i++) { //i is the index number of the large time steps, and note that the final time step is the end
-    for (var j = 1; j <= inputs.num_tiny_steps; j++) { //j is the index number of the tiny time steps, starting at 1 because the starting point is prescribed
-      var year = years[i] + j*(years[i+1] - years[i])/inputs.num_tiny_steps;
-      //Reset new generation
-      for(var tech in inputs.existing_gen){
-        gen_new[tech] = 0;
-      }
-      //Calculate gas price
-      var gas_use = 0; //Quads
-      for(var tech of inputs.gas_techs){
-        gas_use += (gen_future[tech] + gen_exist[tech])*inputs.NG_heatrate[tech]/1e3;
-      }
-      var NG_alpha = inputs.NG_alpha[i] + j*(inputs.NG_alpha[i+1] - inputs.NG_alpha[i])/inputs.num_tiny_steps;
-      var gas_price = NG_alpha + inputs.NG_beta*gas_use;
-      //Calculate carbon price
-      var CO2_price = 0;
-      if(year >= inputs.CO2_price.start_year){
-        CO2_price = inputs.CO2_price.start_level*Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
-      }
-      //Use last year's chosen metric as the electricity price. If this is the first iteration, set to false
-      if (i == 0 && j == 1){
-        var elecprice = false;
-      } else{
-        var elecprice = chosen_new.metric
-      }
-      //Find new tech with lowest metric
-      var chosen_new = getChosen('new', inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, [], elecprice);
-      //grow load for this time step
-      var tot_load = inputs.load[i] + j*(inputs.load[i+1] - inputs.load[i])/inputs.num_tiny_steps;
-      //Get existing gen by tech and total existing gen
-      var tot_gen_exist = 0;
-      for(var tech in inputs.existing_gen){
-        //Take minimum of generation as determined by forced retirements and current gen_exist, which could be lower because of endogenous retirements.
-        gen_exist[tech] = Math.min(gen_exist[tech], inputs.existing_gen[tech][i] + j*(inputs.existing_gen[tech][i+1] - inputs.existing_gen[tech][i])/inputs.num_tiny_steps);
-        tot_gen_exist += gen_exist[tech];
-      }
-      //Now fill the shortfall in generation with the tech with the lowest LCOE
-      var shortfall = tot_load - tot_gen_exist - tot_gen_future;
-      gen_new[chosen_new.tech] += shortfall;
-      gen_future[chosen_new.tech] += shortfall;
-      //Update tot_gen_future
-      tot_gen_future = tot_load - tot_gen_exist;
+  for (var year = inputs.start_year; year <= inputs.end_year; year += 1) {
+    var tot_load = interpolateInputYear(inputs.load, inputs, year);
+    var NG_alpha = interpolateInputYear(inputs.NG_alpha, inputs, year);
+    var CO2_price = 0;
+    if (year >= inputs.CO2_price.start_year){
+      CO2_price = inputs.CO2_price.start_level * Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
+    }
 
-      //If any existing tech has higher metric than the lowest metric of new techs, we will retire the existing gen,
-      //then existing "new gen", in steps of shortfall, at each step adding the new tech with lowest metric and removing the
-      //existing tech with highest metric.
-      do {
-        //Find the new tech with lowest metric
-        chosen_new = getChosen('new', inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, [], elecprice);
-        //Find the existing tech with the highest metric.
-        var chosen_exist = getChosen('exist', inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, [chosen_new.tech], elecprice);
-        //if existing metric is higher than lowest new metric, make the trade, based on shortfall:
-        if(chosen_exist.metric > chosen_new.metric){
-          if(gen_exist[chosen_exist.tech] > 0){
-            //If we have less than shortfall of existing tech gen, use that remainder as the trade amount.
-            var trade_energy = Math.min(gen_exist[chosen_exist.tech], shortfall);
-            gen_exist[chosen_exist.tech] -= trade_energy;
-            tot_gen_exist -= trade_energy;
-            tot_gen_future += trade_energy;
-          } else if(gen_future[chosen_exist.tech] > 0){
-            var trade_energy = Math.min(gen_future[chosen_exist.tech], shortfall);
-            gen_future[chosen_exist.tech] -= trade_energy;
+    var gen_exist_year = {};
+    var gen_future_year = {};
+    var gen_new_year = {};
+    var gen_total_year = {};
+    var rem_exist_legacy = {};
+    var rem_exist_future = {};
+
+    for (var tech of inputs.full_techs){
+      var scheduled_existing = interpolateInputYear(inputs.existing_gen[tech], inputs, year);
+      gen_exist_stock[tech] = Math.min(gen_exist_stock[tech], scheduled_existing);
+
+      gen_exist_year[tech] = 0;
+      gen_future_year[tech] = 0;
+      gen_new_year[tech] = 0;
+      gen_total_year[tech] = 0;
+      if (tech in inputs.LCOE_exist){
+        rem_exist_legacy[tech] = gen_exist_stock[tech];
+        rem_exist_future[tech] = gen_future_stock[tech];
+      } else {
+        rem_exist_legacy[tech] = 0;
+        rem_exist_future[tech] = 0;
+      }
+    }
+
+    var load_for_competition = Math.max(0, tot_load);
+    var step_energy = load_for_competition/num_energy_steps;
+    var energy_epsilon = 1e-9;
+    var last_choice = false;
+
+    for (var step = 0; step < num_energy_steps; step++) {
+      if (step_energy <= 0){
+        break;
+      }
+      var step_remaining = step_energy;
+      while (step_remaining > energy_epsilon){
+        var gas_step = getGasUseAndPrice(inputs, gen_total_year, NG_alpha);
+        var gas_price_step = gas_step.gas_price;
+        var tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, gas_price_step, CO2_price, elecprice);
+        var choice = getBestChoice(tech_data, rem_exist_legacy, rem_exist_future);
+        if (!choice){
+          step_remaining = 0;
+          break;
+        }
+
+        var dispatch_now = step_remaining;
+        if (choice.kind == 'existing'){
+          var existing_avail = rem_exist_legacy[choice.tech] + rem_exist_future[choice.tech];
+          dispatch_now = Math.min(dispatch_now, existing_avail);
+          if (dispatch_now <= energy_epsilon){
+            step_remaining = 0;
+            break;
           }
-          gen_new[chosen_new.tech] += trade_energy;
-          gen_future[chosen_new.tech] += trade_energy;
+          var use_legacy = Math.min(rem_exist_legacy[choice.tech], dispatch_now);
+          rem_exist_legacy[choice.tech] -= use_legacy;
+          rem_exist_future[choice.tech] -= (dispatch_now - use_legacy);
+          gen_exist_year[choice.tech] += use_legacy;
+          gen_future_year[choice.tech] += (dispatch_now - use_legacy);
+        } else {
+          gen_new_year[choice.tech] += dispatch_now;
+          gen_future_year[choice.tech] += dispatch_now;
         }
-        //Re-calculate gas price as gas_use may have changed
-        gas_use = 0; //Quads
-        for(var tech of inputs.gas_techs){
-          gas_use += (gen_future[tech] + gen_exist[tech])*inputs.NG_heatrate[tech]/1e3;
-        }
-        gas_price = NG_alpha + inputs.NG_beta*gas_use;
-      } while(chosen_exist.metric > chosen_new.metric);
 
-      //Calculate total emissions
-      var CO2_tot = 0;
-      for (var tech of inputs.full_techs){
-        CO2_tot += inputs.CO2_emission[tech] * (gen_future[tech] + gen_exist[tech]);
+        gen_total_year[choice.tech] += dispatch_now;
+        step_remaining -= dispatch_now;
+        if (step_remaining < energy_epsilon){
+          step_remaining = 0;
+        }
+        elecprice = choice.metric;
+        last_choice = choice;
       }
-      //Calculate tech-specific costs in Bil $
-      for (var tech of inputs.full_techs){
-        if (gen_future[tech] + gen_exist[tech] >= 0 && tech in chosen_new.LCOEs && tech in chosen_exist.LCOEs){
-          if(inputs.cost_basis == "LCOE"){
-            tech_cost[tech] += (
-              gen_new[tech]*(chosen_new.LCOEs[tech] - chosen_exist.LCOEs[tech])/inputs.CRF +
-              (gen_future[tech] + gen_exist[tech])*chosen_exist.LCOEs[tech]*tiny_step_yrs
-            )/1e3;
-          } else if (inputs.cost_basis == 'metric_comp'){
-            tech_cost[tech] += (
-              gen_new[tech]*(chosen_new.metrics[tech] - chosen_exist.metrics[tech])/inputs.CRF +
-              (gen_future[tech] + gen_exist[tech])*chosen_exist.metrics[tech]*tiny_step_yrs
-            )/1e3;
-          } else if (inputs.cost_basis == 'mixed'){
-            tech_cost[tech] += (
-              gen_new[tech]*(chosen_new.metrics[tech] - chosen_exist.metrics[tech])/inputs.CRF +
-              (gen_future[tech] + gen_exist[tech])*chosen_exist.LCOEs[tech]*tiny_step_yrs
-            )/1e3;
-          }
+    }
+
+    for (var tech of inputs.full_techs){
+      if (tech in inputs.LCOE_exist){
+        gen_exist_stock[tech] = gen_exist_year[tech];
+        gen_future_stock[tech] = gen_future_year[tech];
+      } else {
+        gen_exist_stock[tech] = 0;
+        gen_future_stock[tech] = 0;
+      }
+    }
+
+    var gas_year = getGasUseAndPrice(inputs, gen_total_year, NG_alpha);
+    var gas_use = gas_year.gas_use;
+    var gas_price = gas_year.gas_price;
+    var year_tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, gas_price, CO2_price, elecprice);
+
+    var CO2_tot = 0;
+    for (var tech of inputs.full_techs){
+      CO2_tot += inputs.CO2_emission[tech] * gen_total_year[tech];
+    }
+
+    year_labels.push(year);
+    CO2_tot_out.push(CO2_tot);
+    tot_load_out.push(tot_load);
+    elecprice_out.push(last_choice ? last_choice.metric : 0);
+    gas_price_out.push(gas_price);
+    gas_use_out.push(gas_use);
+
+    for (var tech of inputs.full_techs){
+      var tech_cost = 0;
+      if (tech in year_tech_data.LCOEs_new && tech in year_tech_data.LCOEs_exist){
+        if(inputs.cost_basis == "LCOE"){
+          tech_cost = (
+            gen_new_year[tech] * (year_tech_data.LCOEs_new[tech] - year_tech_data.LCOEs_exist[tech]) / inputs.CRF +
+            (gen_future_year[tech] + gen_exist_year[tech]) * year_tech_data.LCOEs_exist[tech]
+          )/1e3;
+        } else if (inputs.cost_basis == 'metric_comp'){
+          tech_cost = (
+            gen_new_year[tech] * (year_tech_data.metrics_new[tech] - year_tech_data.metrics_exist[tech]) / inputs.CRF +
+            (gen_future_year[tech] + gen_exist_year[tech]) * year_tech_data.metrics_exist[tech]
+          )/1e3;
+        } else if (inputs.cost_basis == 'mixed'){
+          tech_cost = (
+            gen_new_year[tech] * (year_tech_data.metrics_new[tech] - year_tech_data.metrics_exist[tech]) / inputs.CRF +
+            (gen_future_year[tech] + gen_exist_year[tech]) * year_tech_data.LCOEs_exist[tech]
+          )/1e3;
         }
       }
 
-      //If this is the first iteration, reset the start year prices
-      if (i == 0 && j == 1){
-        elecprice_out[0] = chosen_new.metric;
-        gas_price_out[0] = gas_price;
-        gas_use_out[0] = gas_use;
-        for (var tech of inputs.full_techs){
-          metrics_new_out[tech][0] = chosen_new.metrics[tech];
-          metrics_exist_out[tech][0] = chosen_exist.metrics[tech];
-          LCOEs_new_out[tech][0] = chosen_new.LCOEs[tech];
-          LCOEs_exist_out[tech][0] = chosen_exist.LCOEs[tech];
-        }
-      }
-      //now update the chart data if we are on the year
-      if (year % 1 == 0){
-        year_labels.push(year);
-        CO2_tot_out.push(CO2_tot);
-        tot_load_out.push(tot_load);
-        elecprice_out.push(chosen_new.metric);
-        gas_price_out.push(gas_price);
-        gas_use_out.push(gas_use);
-        for (var tech of inputs.full_techs){
-          tech_gen_out[tech].push(gen_future[tech] + gen_exist[tech]);
-          tech_gen_exist_out[tech].push(gen_exist[tech]);
-          tech_gen_future_out[tech].push(gen_future[tech]);
-          tech_cost_out[tech].push(tech_cost[tech]);
-          //Reset tech_cost after outputting.
-          tech_cost[tech] = 0;
-          metrics_new_out[tech].push(chosen_new.metrics[tech]);
-          metrics_exist_out[tech].push(chosen_exist.metrics[tech]);
-          LCOEs_new_out[tech].push(chosen_new.LCOEs[tech]);
-          LCOEs_exist_out[tech].push(chosen_exist.LCOEs[tech]);
-        }
-      }
+      tech_gen_out[tech].push(gen_total_year[tech]);
+      tech_gen_exist_out[tech].push(gen_exist_year[tech]);
+      tech_gen_future_out[tech].push(gen_future_year[tech]);
+      tech_cost_out[tech].push(tech_cost);
+      metrics_new_out[tech].push(tech in year_tech_data.metrics_new ? year_tech_data.metrics_new[tech] : 0);
+      metrics_exist_out[tech].push(tech in year_tech_data.metrics_exist ? year_tech_data.metrics_exist[tech] : 0);
+      LCOEs_new_out[tech].push(tech in year_tech_data.LCOEs_new ? year_tech_data.LCOEs_new[tech] : 0);
+      LCOEs_exist_out[tech].push(tech in year_tech_data.LCOEs_exist ? year_tech_data.LCOEs_exist[tech] : 0);
     }
   }
   return {year_labels: year_labels,
@@ -865,58 +865,100 @@ function runTiniest(inputs) {
           };
 }
 
-function getChosen(new_or_exist, inputs, i, j, gen_future, gen_exist, tot_load, gas_price, CO2_price, exclude_techs, elecprice){
-  //Get chosen tech and associated metric
-  var first_tech = true;
-  var metric_chosen, tech_chosen;
-  var LCOEs = {};
-  var metrics = {};
-  for(var tech in inputs.LCOE_new){
-    if(new_or_exist == 'exist' && gen_future[tech] + gen_exist[tech] <= 0) { continue;}
-    //Use last step's market share for value factor calculation
-    var tech_penetration = (gen_future[tech] + gen_exist[tech])/tot_load;
+function interpolateInputYear(arr, inputs, year){
+  if (inputs.num_time_steps <= 1){
+    return arr[0];
+  }
+  var step_years = (inputs.end_year - inputs.start_year)/(inputs.num_time_steps - 1);
+  if (step_years == 0){
+    return arr[0];
+  }
+  var position = (year - inputs.start_year)/step_years;
+  if (position <= 0){
+    return arr[0];
+  }
+  if (position >= inputs.num_time_steps - 1){
+    return arr[inputs.num_time_steps - 1];
+  }
+  var i = Math.floor(position);
+  var frac = position - i;
+  return arr[i] + frac*(arr[i+1] - arr[i]);
+}
+
+function getGasUseAndPrice(inputs, gen_by_tech, NG_alpha){
+  var gas_use = 0;
+  for (var gas_tech of inputs.gas_techs){
+    gas_use += gen_by_tech[gas_tech] * inputs.NG_heatrate[gas_tech]/1e3;
+  }
+  return {gas_use: gas_use, gas_price: NG_alpha + inputs.NG_beta*gas_use};
+}
+
+function getMetricFromLCOE(inputs, LCOE, value_factor, elecprice){
+  if (inputs.metric_comp == 'PLCOE' || elecprice == false){
+    return LCOE/value_factor;
+  }
+  if (inputs.metric_comp == 'SLCOE'){
+    return LCOE + elecprice - value_factor*elecprice;
+  }
+  return LCOE;
+}
+
+function getTechDataForYear(inputs, year, gen_by_tech, tot_load, gas_price, CO2_price, elecprice){
+  var LCOEs_new = {};
+  var LCOEs_exist = {};
+  var metrics_new = {};
+  var metrics_exist = {};
+  for(var tech in inputs.LCOE_exist){
+    var tech_penetration = 0;
+    if (tot_load > 0){
+      tech_penetration = gen_by_tech[tech]/tot_load;
+    }
     //calculate value factor at this market share, y = mx + b
     var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
     //If value is zero or negative, don't consider this tech
     if(inputs.metric_comp == 'PLCOE' && value_factor <= 0) { continue;}
-    //Get LCOE for this time step
-    if(new_or_exist == 'new'){
-      var LCOE = inputs.LCOE_new[tech][i] + j*(inputs.LCOE_new[tech][i+1] - inputs.LCOE_new[tech][i])/inputs.num_tiny_steps;
-      //Add slope to LCOE
-      LCOE += inputs.LCOE_slope[tech] * (gen_future[tech] + gen_exist[tech])/1000;
-    }
-    else if(new_or_exist == 'exist'){
-      var LCOE = inputs.LCOE_exist[tech][i] + j*(inputs.LCOE_exist[tech][i+1] - inputs.LCOE_exist[tech][i])/inputs.num_tiny_steps;
-    }
+
+    var LCOE_exist = interpolateInputYear(inputs.LCOE_exist[tech], inputs, year);
+
     //Add NG fuel cost to LCOE
-    LCOE += gas_price * inputs.NG_heatrate[tech];
+    LCOE_exist += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
-    LCOE += CO2_price * inputs.CO2_emission[tech];
+    LCOE_exist += CO2_price * inputs.CO2_emission[tech];
     //Save LCOEs[tech] for output
-    LCOEs[tech] = LCOE;
-    //Calculate metric and keep track of the chosen metric and corresponding tech.
-    if (inputs.metric_comp == 'PLCOE' || elecprice == false){
-      var metric = LCOE/value_factor;
-    } else if (inputs.metric_comp == 'SLCOE'){
-      var metric = LCOE + elecprice - value_factor*elecprice;
-    } else if (inputs.metric_comp == 'LCOE'){
-      var metric = LCOE;
-    }
-    metrics[tech] = metric;
-    if(exclude_techs.includes(tech)) { continue;}
-    if (first_tech == true){
-      metric_chosen = metric;
-      tech_chosen = tech;
-      first_tech = false;
-    } else if (new_or_exist == 'new' && metric < metric_chosen){
-      metric_chosen = metric;
-      tech_chosen = tech;
-    } else if (new_or_exist == 'exist' && metric > metric_chosen){
-      metric_chosen = metric;
-      tech_chosen = tech;
+    LCOEs_exist[tech] = LCOE_exist;
+
+    var metric_exist = getMetricFromLCOE(inputs, LCOE_exist, value_factor, elecprice);
+    metrics_exist[tech] = metric_exist;
+
+    if (tech in inputs.LCOE_new){
+      var LCOE_new = interpolateInputYear(inputs.LCOE_new[tech], inputs, year);
+      LCOE_new += inputs.LCOE_slope[tech] * gen_by_tech[tech]/1000;
+      LCOE_new += gas_price * inputs.NG_heatrate[tech];
+      LCOE_new += CO2_price * inputs.CO2_emission[tech];
+      LCOEs_new[tech] = LCOE_new;
+
+      var metric_new = getMetricFromLCOE(inputs, LCOE_new, value_factor, elecprice);
+      metrics_new[tech] = metric_new;
     }
   }
-  return {metric: metric_chosen, tech: tech_chosen, LCOEs: LCOEs, metrics: metrics};
+  return {LCOEs_new: LCOEs_new, LCOEs_exist: LCOEs_exist, metrics_new: metrics_new, metrics_exist: metrics_exist};
+}
+
+function getBestChoice(tech_data, rem_exist_legacy, rem_exist_future){
+  var best_choice = false;
+  for(var tech in tech_data.metrics_exist){
+    if ((rem_exist_legacy[tech] + rem_exist_future[tech]) > 0){
+      if (best_choice == false || tech_data.metrics_exist[tech] < best_choice.metric){
+        best_choice = {kind: 'existing', tech: tech, metric: tech_data.metrics_exist[tech]};
+      }
+    }
+  }
+  for(var tech in tech_data.metrics_new){
+    if (best_choice == false || tech_data.metrics_new[tech] < best_choice.metric){
+      best_choice = {kind: 'new', tech: tech, metric: tech_data.metrics_new[tech]};
+    }
+  }
+  return best_choice;
 }
 
 function updateCharts(outputs){
