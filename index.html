@@ -559,16 +559,20 @@ var gen_decision_config_out = {
           label: function(context) {
             var block_index = context.dataset.blockIndex || (context.datasetIndex + 1);
             var tech = '';
+            var kind = '';
             var metric = '';
             if (context.dataset.techByYear){
               tech = context.dataset.techByYear[context.dataIndex];
+            }
+            if (context.dataset.kindByYear){
+              kind = context.dataset.kindByYear[context.dataIndex];
             }
             if (context.dataset.metricByYear){
               metric = context.dataset.metricByYear[context.dataIndex];
             }
             var generation = Number(context.parsed.y).toLocaleString(undefined, {maximumFractionDigits: 2});
             return ['Block: ' + String(block_index),
-                    'Tech: ' + tech,
+                    'Tech: ' + tech + (kind ? ' (' + kind + ')' : ''),
                     'Generation: ' + generation + ' TWh',
                     inputs.metric_comp + ': ' + Number(metric).toLocaleString(undefined, {maximumFractionDigits: 2})];
           },
@@ -748,6 +752,7 @@ function runTiniest(inputs) {
   var tech_gen_out = {};
   var decision_blocks_out = [];
   var decision_block_tech_out = [];
+  var decision_block_kind_out = [];
   var decision_block_metric_out = [];
   var tech_gen_exist_out = {}; //Generation from techs built before 2020
   var tech_gen_future_out = {}; //Generation from techs built after 2020
@@ -820,6 +825,7 @@ function runTiniest(inputs) {
     var last_choice = false;
     var year_decision_blocks = [];
     var year_decision_techs = [];
+    var year_decision_kinds = [];
     var year_decision_metrics = [];
 
     for (var step = 0; step < num_energy_steps; step++) {
@@ -862,6 +868,7 @@ function runTiniest(inputs) {
         }
         year_decision_blocks.push(dispatch_now);
         year_decision_techs.push(choice.tech);
+        year_decision_kinds.push(choice.kind);
         year_decision_metrics.push(choice.metric);
         elecprice = choice.metric;
         last_choice = choice;
@@ -871,6 +878,7 @@ function runTiniest(inputs) {
     //Keep yearly blocks in exact chronological selection order.
     decision_blocks_out.push(year_decision_blocks);
     decision_block_tech_out.push(year_decision_techs);
+    decision_block_kind_out.push(year_decision_kinds);
     decision_block_metric_out.push(year_decision_metrics);
 
     for (var tech of inputs.full_techs){
@@ -935,6 +943,7 @@ function runTiniest(inputs) {
           tech_gen_out: tech_gen_out,
           decision_blocks_out: decision_blocks_out,
           decision_block_tech_out: decision_block_tech_out,
+          decision_block_kind_out: decision_block_kind_out,
           decision_block_metric_out: decision_block_metric_out,
           tech_gen_exist_out: tech_gen_exist_out,
           tech_gen_future_out: tech_gen_future_out,
@@ -1065,17 +1074,20 @@ function updateCharts(outputs){
     var block_data = [];
     var block_colors = [];
     var block_techs = [];
+    var block_kinds = [];
     var block_metrics = [];
     for (var y = 0; y < outputs.year_labels.length; y++){
       if (b < outputs.decision_blocks_out[y].length){
         block_data.push(outputs.decision_blocks_out[y][b]);
         var block_tech = outputs.decision_block_tech_out[y][b];
         block_techs.push(block_tech);
+        block_kinds.push(outputs.decision_block_kind_out[y][b]);
         block_metrics.push(outputs.decision_block_metric_out[y][b]);
         block_colors.push(inputs.colors[block_tech]);
       } else {
         block_data.push(0);
         block_techs.push('');
+        block_kinds.push('');
         block_metrics.push('');
         block_colors.push('rgba(0,0,0,0)');
       }
@@ -1089,6 +1101,7 @@ function updateCharts(outputs){
       stack: 'decision',
       blockIndex: b + 1,
       techByYear: block_techs,
+      kindByYear: block_kinds,
       metricByYear: block_metrics,
     });
   }
