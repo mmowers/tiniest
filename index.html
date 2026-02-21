@@ -202,6 +202,9 @@ h5{
       </div>
       <div id='CO2RangeChart'></div>
       <div id='VRERangeChart'></div>
+      <div class="chart-container">
+        <canvas id="generationDecisionChart"></canvas>
+      </div>
     </div>
   </div>
 </div>
@@ -513,6 +516,65 @@ var generationChart = new Chart(
   gen_config_out,
 );
 
+var gen_decision_data_out = {
+  labels: [inputs.start_year],
+  datasets: [],
+};
+var gen_decision_config_out = {
+  type: 'bar',
+  data: gen_decision_data_out,
+  options: {
+    maintainAspectRatio: true,
+    scales: {
+      x: {
+        type: 'category',
+        stacked: true,
+        ticks: {
+          maxRotation: 0,
+        },
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Generation Decisions (TWh/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        filter: function(context) {
+          return context.parsed.y > 0;
+        },
+        callbacks: {
+          title: function(items) {
+            return 'Year: ' + items[0].label;
+          },
+          label: function(context) {
+            var block_index = context.dataset.blockIndex || (context.datasetIndex + 1);
+            var tech = '';
+            if (context.dataset.techByYear){
+              tech = context.dataset.techByYear[context.dataIndex];
+            }
+            var generation = Number(context.parsed.y).toLocaleString(undefined, {maximumFractionDigits: 2});
+            return ['Block: ' + String(block_index), 'Tech: ' + tech, 'Generation: ' + generation + ' TWh'];
+          },
+        },
+      },
+    },
+  },
+};
+var generationDecisionChart = new Chart(
+  document.getElementById('generationDecisionChart'),
+  gen_decision_config_out,
+);
+
 //Cost Chart. Start with zero cost for the very first fraction of a year.
 var tech_cost_datasets = [];
 for (var tech of inputs.full_techs){
@@ -677,6 +739,8 @@ function runTiniest(inputs) {
   //First initialize outputs
   var year_labels = [];
   var tech_gen_out = {};
+  var decision_blocks_out = [];
+  var decision_block_tech_out = [];
   var tech_gen_exist_out = {}; //Generation from techs built before 2020
   var tech_gen_future_out = {}; //Generation from techs built after 2020
   var tech_cost_out = {};
@@ -746,6 +810,8 @@ function runTiniest(inputs) {
     var step_energy = load_for_competition/num_energy_steps;
     var energy_epsilon = 1e-9;
     var last_choice = false;
+    var year_decision_blocks = [];
+    var year_decision_techs = [];
 
     for (var step = 0; step < num_energy_steps; step++) {
       if (step_energy <= 0){
@@ -785,10 +851,16 @@ function runTiniest(inputs) {
         if (step_remaining < energy_epsilon){
           step_remaining = 0;
         }
+        year_decision_blocks.push(dispatch_now);
+        year_decision_techs.push(choice.tech);
         elecprice = choice.metric;
         last_choice = choice;
       }
     }
+
+    //Keep yearly blocks in exact chronological selection order.
+    decision_blocks_out.push(year_decision_blocks);
+    decision_block_tech_out.push(year_decision_techs);
 
     for (var tech of inputs.full_techs){
       if (tech in inputs.LCOE_exist){
@@ -850,6 +922,8 @@ function runTiniest(inputs) {
   }
   return {year_labels: year_labels,
           tech_gen_out: tech_gen_out,
+          decision_blocks_out: decision_blocks_out,
+          decision_block_tech_out: decision_block_tech_out,
           tech_gen_exist_out: tech_gen_exist_out,
           tech_gen_future_out: tech_gen_future_out,
           tech_cost_out: tech_cost_out,
@@ -963,13 +1037,48 @@ function getBestChoice(tech_data, rem_exist_legacy, rem_exist_future){
 
 function updateCharts(outputs){
   generationChart.data.labels = outputs.year_labels;
+  generationDecisionChart.data.labels = outputs.year_labels.map(String);
   costChart.data.labels = outputs.year_labels;
   for(var n = 0; n < inputs.full_techs.length; n++){
     var tech = inputs.full_techs[n];
     generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
     costChart.data.datasets[n].data = outputs.tech_cost_out[tech];
   }
+  var max_decision_blocks = 0;
+  for (var y = 0; y < outputs.decision_blocks_out.length; y++){
+    max_decision_blocks = Math.max(max_decision_blocks, outputs.decision_blocks_out[y].length);
+  }
+  var decision_datasets = [];
+  for (var b = 0; b < max_decision_blocks; b++){
+    var block_data = [];
+    var block_colors = [];
+    var block_techs = [];
+    for (var y = 0; y < outputs.year_labels.length; y++){
+      if (b < outputs.decision_blocks_out[y].length){
+        block_data.push(outputs.decision_blocks_out[y][b]);
+        var block_tech = outputs.decision_block_tech_out[y][b];
+        block_techs.push(block_tech);
+        block_colors.push(inputs.colors[block_tech]);
+      } else {
+        block_data.push(0);
+        block_techs.push('');
+        block_colors.push('rgba(0,0,0,0)');
+      }
+    }
+    decision_datasets.push({
+      label: 'Block ' + String(b + 1),
+      data: block_data,
+      borderColor: block_colors,
+      backgroundColor: block_colors,
+      borderWidth: 0,
+      stack: 'decision',
+      blockIndex: b + 1,
+      techByYear: block_techs,
+    });
+  }
+  generationDecisionChart.data.datasets = decision_datasets;
   generationChart.update() //it didn't seem to work to update within runTiniest(), perhaps because it was updating too fast.
+  generationDecisionChart.update()
   costChart.update()
   CO2Chart.data.labels = outputs.year_labels;
   CO2Chart.data.datasets[0].data = outputs.CO2_tot_out;
