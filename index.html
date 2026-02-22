@@ -109,15 +109,6 @@ h5{
             <tr id="LCOE_exist-header"><th>Tech</th></tr>
           </table>
         </div>
-        <!-- LCOE slope-->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_slope-div" aria-expanded="false" aria-controls="LCOE_slope-div">
-          LCOE Resource Supply Curve Slope (2018$/MWh per 1000 TWh)
-        </h5>
-        <div id="LCOE_slope-div" class="collapse">
-          <table id="LCOE_slope-table" class="table table-sm table-striped">
-            <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
-          </table>
-        </div>
         <!-- Value Factor -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
           Value factor (y) vs market share fraction (x)
@@ -224,9 +215,9 @@ var inputs = {
     Coal: [72, 70, 69, 67], //High CF
     Gas_CC: [27, 33, 32, 32], //High CF, includes fuel
     Gas_CCS: [46, 52, 50, 49], //High CF, includes fuel
-    Wind_Ons: [31, 24, 22, 19], //class 4
-    Wind_Ofs: [81, 52, 44, 39], //class 4
-    PV: [29, 17, 15, 13], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
+    Wind_Ons: [31, 25, 23, 20], //class 4
+    Wind_Ofs: [81, 53, 45, 40], //class 4
+    PV: [29, 18, 16, 14], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
   // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
   //   Nuclear: [80, 76, 73, 70],
@@ -256,16 +247,6 @@ var inputs = {
   //   Wind_Ofs: [0, 0, 0, 0],
   //   PV: [0, 0, 0, 0],
   // },
-  LCOE_slope: { //2018$/MWh per petawatt-hour of generation, from reV outputs
-    Nuclear: 0,
-    Coal: 0,
-    Gas_CC: 0,
-    Gas_CCS: 0,
-    Wind_Ons: 0.674,
-    Wind_Ofs: 4.88,
-    PV: 0.803,
-    Other: 0,
-  },
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.9, 0],
     Coal: [.9, 0], //copied from the others
@@ -372,12 +353,6 @@ for (var tech of inputs.full_techs){
     }
     lcoe_exist_str += '</tr>';
     $('#LCOE_exist-table').append(lcoe_exist_str);
-  }
-  if (tech in inputs.LCOE_slope){
-    //LCOE Slope
-    var lcoe_slope_str = '<tr><td>' + tech + '</td>';
-    lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
-    $('#LCOE_slope-table').append(lcoe_slope_str);
   }
   if (tech in inputs.value_factor){
     //Value Factor
@@ -1029,7 +1004,6 @@ function getTechDataForYear(inputs, year, gen_by_tech, tot_load, CO2_price, elec
 
     if (tech in inputs.LCOE_new){
       var LCOE_new = interpolateInputYear(inputs.LCOE_new[tech], inputs, year);
-      LCOE_new += inputs.LCOE_slope[tech] * gen_by_tech[tech]/1000;
       LCOE_new += CO2_price * inputs.CO2_emission[tech];
       LCOEs_new[tech] = LCOE_new;
 
