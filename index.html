@@ -848,7 +848,7 @@ function runTiniest(inputs) {
         var gas_step = getGasUseAndPrice(inputs, gen_total_year, NG_alpha);
         var gas_price_step = gas_step.gas_price;
         var tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, gas_price_step, CO2_price, elecprice);
-        var choice = getBestChoice(tech_data, rem_exist_legacy, rem_exist_future);
+        var choice = getBestChoice(tech_data, rem_exist_legacy, rem_exist_future, energy_epsilon);
         if (!choice){
           step_remaining = 0;
           break;
@@ -1082,10 +1082,10 @@ function getTechDataForYear(inputs, year, gen_by_tech, tot_load, gas_price, CO2_
   return {LCOEs_new: LCOEs_new, LCOEs_exist: LCOEs_exist, metrics_new: metrics_new, metrics_exist: metrics_exist};
 }
 
-function getBestChoice(tech_data, rem_exist_legacy, rem_exist_future){
+function getBestChoice(tech_data, rem_exist_legacy, rem_exist_future, energy_epsilon){
   var best_choice = false;
   for(var tech in tech_data.metrics_exist){
-    if ((rem_exist_legacy[tech] + rem_exist_future[tech]) > 0){
+    if ((rem_exist_legacy[tech] + rem_exist_future[tech]) > energy_epsilon){
       if (best_choice == false || tech_data.metrics_exist[tech] < best_choice.metric){
         best_choice = {kind: 'existing', tech: tech, metric: tech_data.metrics_exist[tech]};
       }
