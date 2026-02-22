@@ -213,7 +213,8 @@ h5{
 "use strict";
 var inputs = {
   num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
-  num_tiny_steps: 100, //This is the number of energy-dispatch steps solved within each year
+  num_tiny_steps: 50, //Number of energy-dispatch steps solved within each year
+  tiny_step_pct_end: 0.1, //Final dispatch step size as percent of annual load; start step is computed to make total 100%, assuming linear spacing between start and end.
   start_year: 2020,
   end_year: 2050,
   CRF: .07,
@@ -561,6 +562,7 @@ var gen_decision_config_out = {
             var tech = '';
             var kind = '';
             var metric = '';
+            var step_pct = null;
             if (context.dataset.techByYear){
               tech = context.dataset.techByYear[context.dataIndex];
             }
@@ -570,10 +572,18 @@ var gen_decision_config_out = {
             if (context.dataset.metricByYear){
               metric = context.dataset.metricByYear[context.dataIndex];
             }
+            if (context.dataset.stepPctByYear){
+              step_pct = context.dataset.stepPctByYear[context.dataIndex];
+            }
             var generation = Number(context.parsed.y).toLocaleString(undefined, {maximumFractionDigits: 2});
+            var step_pct_label = 'Step size: n/a';
+            if (typeof step_pct === 'number' && isFinite(step_pct)){
+              step_pct_label = 'Step size: ' + Number(step_pct).toLocaleString(undefined, {maximumFractionDigits: 3}) + '% of load';
+            }
             return ['Block: ' + String(block_index),
                     'Tech: ' + tech + (kind ? ' (' + kind + ')' : ''),
                     'Generation: ' + generation + ' TWh',
+                    step_pct_label,
                     inputs.metric_comp + ': ' + Number(metric).toLocaleString(undefined, {maximumFractionDigits: 2})];
           },
         },
@@ -785,7 +795,8 @@ function runTiniest(inputs) {
   }
 
   var elecprice = false;
-  var num_energy_steps = Math.max(1, inputs.num_tiny_steps);
+  var step_shares = getDispatchStepShares(inputs);
+  var num_energy_steps = step_shares.length;
 
   for (var year = inputs.start_year; year <= inputs.end_year; year += 1) {
     var tot_load = interpolateInputYear(inputs.load, inputs, year);
@@ -820,7 +831,6 @@ function runTiniest(inputs) {
     }
 
     var load_for_competition = Math.max(0, tot_load);
-    var step_energy = load_for_competition/num_energy_steps;
     var energy_epsilon = 1e-9;
     var last_choice = false;
     var year_decision_blocks = [];
@@ -829,8 +839,9 @@ function runTiniest(inputs) {
     var year_decision_metrics = [];
 
     for (var step = 0; step < num_energy_steps; step++) {
+      var step_energy = load_for_competition * step_shares[step];
       if (step_energy <= 0){
-        break;
+        continue;
       }
       var step_remaining = step_energy;
       while (step_remaining > energy_epsilon){
@@ -960,6 +971,38 @@ function runTiniest(inputs) {
           };
 }
 
+function getDispatchStepShares(inputs){
+  var num_steps = Math.max(1, Number(inputs.num_tiny_steps) || 1);
+  var end_pct = Number(inputs.tiny_step_pct_end);
+  var start_pct = 200/num_steps - end_pct;
+
+  if (isFinite(start_pct) && isFinite(end_pct) && start_pct >= 0 && end_pct >= 0){
+    var shares = [];
+    var total = 0;
+    for (var i = 0; i < num_steps; i++){
+      var pct = end_pct;
+      if (num_steps > 1){
+        pct = start_pct + (end_pct - start_pct) * i/(num_steps - 1);
+      }
+      var share = pct/100;
+      shares.push(share);
+      total += share;
+    }
+    if (total > 0){
+      for (var j = 0; j < shares.length; j++){
+        shares[j] = shares[j]/total;
+      }
+      return shares;
+    }
+  }
+
+  var uniform_shares = [];
+  for (var step = 0; step < num_steps; step++){
+    uniform_shares.push(1/num_steps);
+  }
+  return uniform_shares;
+}
+
 function interpolateInputYear(arr, inputs, year){
   if (inputs.num_time_steps <= 1){
     return arr[0];
@@ -1076,9 +1119,12 @@ function updateCharts(outputs){
     var block_techs = [];
     var block_kinds = [];
     var block_metrics = [];
+    var block_step_pcts = [];
     for (var y = 0; y < outputs.year_labels.length; y++){
       if (b < outputs.decision_blocks_out[y].length){
         block_data.push(outputs.decision_blocks_out[y][b]);
+        var year_load = outputs.tot_load_out[y];
+        block_step_pcts.push(outputs.decision_blocks_out[y][b] / year_load * 100);
         var block_tech = outputs.decision_block_tech_out[y][b];
         block_techs.push(block_tech);
         block_kinds.push(outputs.decision_block_kind_out[y][b]);
@@ -1086,6 +1132,7 @@ function updateCharts(outputs){
         block_colors.push(inputs.colors[block_tech]);
       } else {
         block_data.push(0);
+        block_step_pcts.push(null);
         block_techs.push('');
         block_kinds.push('');
         block_metrics.push('');
@@ -1103,6 +1150,7 @@ function updateCharts(outputs){
       techByYear: block_techs,
       kindByYear: block_kinds,
       metricByYear: block_metrics,
+      stepPctByYear: block_step_pcts,
     });
   }
   generationDecisionChart.data.datasets = decision_datasets;
