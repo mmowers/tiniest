@@ -118,30 +118,6 @@ h5{
             <tr id="LCOE_slope-header"><th>Tech</th><th>Slope</th></tr>
           </table>
         </div>
-        <!-- Natural gas heat rate-->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_heatrate-div" aria-expanded="false" aria-controls="NG_heatrate-div">
-          Natural gas heat rate (MMBtu/MWh)
-        </h5>
-        <div id="NG_heatrate-div" class="collapse">
-          <table id="NG_heatrate-table" class="table table-sm table-striped">
-            <tr id="NG_heatrate-header"><th>Tech</th><th>MMBtu/MWh</th></tr>
-          </table>
-        </div>
-        <!-- Natural gas alpha -->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_alpha-div" aria-expanded="false" aria-controls="NG_alpha-div">
-          Natural gas price at no electric sector use (2018$/MMBtu)
-        </h5>
-        <div id="NG_alpha-div" class="collapse">
-          <table id="NG_alpha-table" class="table table-sm table-striped">
-            <tr id="NG_alpha-header"></tr>
-          </table>
-        </div>
-        <!-- Natural gas beta -->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#NG_beta-div" aria-expanded="false" aria-controls="NG_beta-div">
-          Natural gas price slope (2018$/MMBtu per Quad)
-        </h5>
-        <div id="NG_beta-div" class="collapse">
-        </div>
         <!-- Value Factor -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#value_factor-div" aria-expanded="false" aria-controls="value_factor-div">
           Value factor (y) vs market share fraction (x)
@@ -223,7 +199,6 @@ var inputs = {
   cost_basis: 'LCOE', //Use either 'LCOE' to base costs on LCOE alone, 'metric_comp' to base costs on the metric of competition, or 'mixed' to use LCOE for existing and metric_comp for new techs.
   load: [3961, 4363, 4764, 5317], //TWh per year, 2020 adjusted to be equal to existing gen
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind_Ons', 'Wind_Ofs','PV', 'Other'],
-  gas_techs: ['Gas_CC', 'Gas_CCS'],
   colors: {
     Nuclear: '#820000',
     Coal: '#222222',
@@ -247,8 +222,8 @@ var inputs = {
   LCOE_new: { //2018$/MWh, ATB 2020 Moderate
     Nuclear: [75, 73, 70, 66],
     Coal: [72, 70, 69, 67], //High CF
-    Gas_CC: [12, 11, 11, 11], //High CF, no fuel
-    Gas_CCS: [29, 26, 25, 24], //High CF, no fuel
+    Gas_CC: [27, 33, 32, 32], //High CF, includes fuel
+    Gas_CCS: [46, 52, 50, 49], //High CF, includes fuel
     Wind_Ons: [31, 24, 22, 19], //class 4
     Wind_Ofs: [81, 52, 44, 39], //class 4
     PV: [29, 17, 15, 13], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
@@ -265,8 +240,8 @@ var inputs = {
   LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
     Nuclear: [24, 24, 24, 24],
     Coal: [26, 26, 26, 26], //High CF
-    Gas_CC: [4, 4, 4, 4], //High CF, no fuel
-    Gas_CCS: [9, 9, 9, 9], //High CF, no fuel
+    Gas_CC: [19, 26, 25, 25], //High CF, includes fuel
+    Gas_CCS: [26, 35, 34, 34], //High CF, includes fuel
     Wind_Ons: [9, 9, 9, 9], //class 4
     Wind_Ofs: [15, 15, 15, 15], //class 4
     PV: [7, 7, 7, 7], //Kansas City
@@ -291,19 +266,6 @@ var inputs = {
     PV: 0.803,
     Other: 0,
   },
-  NG_heatrate: { //Natural gas heat rate (MMBtu/MWh)
-    Nuclear: 0,
-    Coal: 0,
-    Gas_CC: 6.4,
-    Gas_CCS: 7.5,
-    Wind_Ons: 0,
-    Wind_Ofs: 0,
-    PV: 0,
-    Other: 0,
-  },
-  NG_alpha: [0.065, 1.26, 1.12, 1.20], //2018$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2020_reference.csv (2004$) and ng_demand_AEO_2020_reference.csv
-  // NG_alpha: [-.27, 1.21, 1.19, 1.01], //2019$/MMBtu, assuming no electric sector use, based on ReEDS alpha_AEO_2021_reference.csv (2004$) and ng_demand_AEO_2021_reference.csv
-  NG_beta: 0.22, //$/MMBtu per Quad, based on ReEDS national beta of 0.1352 2004$/MMBtu (from b_inputs.gms) and regional beta in cd_beta0.csv
   value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
     Nuclear: [.9, 0],
     Coal: [.9, 0], //copied from the others
@@ -375,7 +337,6 @@ for (var year of years){
   $('#existing_gen-header').append('<th>' + year + '</th>');
   $('#LCOE_new-header').append('<th>' + year + '</th>');
   $('#LCOE_exist-header').append('<th>' + year + '</th>');
-  $('#NG_alpha-header').append('<th>' + year + '</th>');
 }
 
 //Load
@@ -386,21 +347,7 @@ for (var i = 0; i < inputs.num_time_steps; i++){
 }
 load_str += '</tr>';
 $('#load-table').append(load_str);
-//Natural gas alpha
-var NG_alpha_str = '<tr>';
-for (var i = 0; i < inputs.num_time_steps; i++){
-  NG_alpha_str += '<td><input type="text" size="6" id="NG_alpha-' + i + '" value="' + inputs.NG_alpha[i]+ '"></td>';
-}
-NG_alpha_str += '</tr>';
-$('#NG_alpha-table').append(NG_alpha_str);
-//Natural gas beta
-$('#NG_beta-div').append('<input type="text" size="6" id="NG_beta" value="' + inputs.NG_beta + '">');
-
 for (var tech of inputs.full_techs){
-  var no_fuel_str = '';
-  if(inputs.gas_techs.includes(tech)){
-    no_fuel_str += ' (no fuel)';
-  }
   //Existing gen
   var existing_gen_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
@@ -410,7 +357,7 @@ for (var tech of inputs.full_techs){
   $('#existing_gen-table').append(existing_gen_str);
   if (tech in inputs.LCOE_new){
     //New tech LCOE
-    var lcoe_new_str = '<tr><td>' + tech + no_fuel_str + '</td>';
+    var lcoe_new_str = '<tr><td>' + tech + '</td>';
     for (var i = 0; i < inputs.num_time_steps; i++){
       lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
     }
@@ -419,7 +366,7 @@ for (var tech of inputs.full_techs){
   }
   if (tech in inputs.LCOE_exist){
     //Existing tech LCOE
-    var lcoe_exist_str = '<tr><td>' + tech + no_fuel_str + '</td>';
+    var lcoe_exist_str = '<tr><td>' + tech + '</td>';
     for (var i = 0; i < inputs.num_time_steps; i++){
       lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
     }
@@ -432,10 +379,6 @@ for (var tech of inputs.full_techs){
     lcoe_slope_str += '<td><input type="text" size="6" id="LCOE_slope-' + tech + '" value="' + inputs.LCOE_slope[tech] + '"></td></tr>';
     $('#LCOE_slope-table').append(lcoe_slope_str);
   }
-  //Natural gas heat rate
-  var NG_heatrate_str = '<tr><td>' + tech + '</td>';
-  NG_heatrate_str += '<td><input type="text" size="6" id="NG_heatrate-' + tech + '" value="' + inputs.NG_heatrate[tech] + '"></td></tr>';
-  $('#NG_heatrate-table').append(NG_heatrate_str);
   if (tech in inputs.value_factor){
     //Value Factor
     var vf_str = '<tr><td>' + tech + '</td>';
@@ -823,8 +766,6 @@ function runTiniest(inputs) {
   var tot_load_out = [];
   var CO2_tot_out = [];
   var elecprice_out = [];
-  var gas_price_out = [];
-  var gas_use_out = [];
 
   var gen_future_stock = {}; //Generation from techs built after start year
   var gen_exist_stock = {}; //Generation from techs built before start year
@@ -839,7 +780,6 @@ function runTiniest(inputs) {
 
   for (var year = inputs.start_year; year <= inputs.end_year; year += 1) {
     var tot_load = interpolateInputYear(inputs.load, inputs, year);
-    var NG_alpha = interpolateInputYear(inputs.NG_alpha, inputs, year);
     var CO2_price = 0;
     if (year >= inputs.CO2_price.start_year){
       CO2_price = inputs.CO2_price.start_level * Math.pow(inputs.CO2_price.escalation, year - inputs.CO2_price.start_year);
@@ -884,9 +824,7 @@ function runTiniest(inputs) {
       }
       var step_remaining = step_energy;
       while (step_remaining > energy_epsilon){
-        var gas_step = getGasUseAndPrice(inputs, gen_total_year, NG_alpha);
-        var gas_price_step = gas_step.gas_price;
-        var tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, gas_price_step, CO2_price, elecprice);
+        var tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, CO2_price, elecprice);
         var choice = getBestChoice(tech_data, rem_exist_legacy, rem_exist_future, energy_epsilon);
         if (!choice){
           step_remaining = 0;
@@ -941,10 +879,7 @@ function runTiniest(inputs) {
       }
     }
 
-    var gas_year = getGasUseAndPrice(inputs, gen_total_year, NG_alpha);
-    var gas_use = gas_year.gas_use;
-    var gas_price = gas_year.gas_price;
-    var year_tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, gas_price, CO2_price, elecprice);
+    var year_tech_data = getTechDataForYear(inputs, year, gen_total_year, tot_load, CO2_price, elecprice);
 
     var CO2_tot = 0;
     for (var tech of inputs.full_techs){
@@ -955,8 +890,6 @@ function runTiniest(inputs) {
     CO2_tot_out.push(CO2_tot);
     tot_load_out.push(tot_load);
     elecprice_out.push(last_choice ? last_choice.metric : 0);
-    gas_price_out.push(gas_price);
-    gas_use_out.push(gas_use);
 
     for (var tech of inputs.full_techs){
       var tech_cost = 0;
@@ -1003,8 +936,6 @@ function runTiniest(inputs) {
           LCOEs_new_out: LCOEs_new_out,
           LCOEs_exist_out: LCOEs_exist_out,
           elecprice_out: elecprice_out,
-          gas_price_out: gas_price_out,
-          gas_use_out: gas_use_out,
           CO2_tot_out: CO2_tot_out,
           tot_load_out: tot_load_out,
           };
@@ -1062,14 +993,6 @@ function interpolateInputYear(arr, inputs, year){
   return arr[i] + frac*(arr[i+1] - arr[i]);
 }
 
-function getGasUseAndPrice(inputs, gen_by_tech, NG_alpha){
-  var gas_use = 0;
-  for (var gas_tech of inputs.gas_techs){
-    gas_use += gen_by_tech[gas_tech] * inputs.NG_heatrate[gas_tech]/1e3;
-  }
-  return {gas_use: gas_use, gas_price: NG_alpha + inputs.NG_beta*gas_use};
-}
-
 function getMetricFromLCOE(inputs, LCOE, value_factor, elecprice){
   if (inputs.metric_comp == 'PLCOE' || elecprice == false){
     return LCOE/value_factor;
@@ -1080,7 +1003,7 @@ function getMetricFromLCOE(inputs, LCOE, value_factor, elecprice){
   return LCOE;
 }
 
-function getTechDataForYear(inputs, year, gen_by_tech, tot_load, gas_price, CO2_price, elecprice){
+function getTechDataForYear(inputs, year, gen_by_tech, tot_load, CO2_price, elecprice){
   var LCOEs_new = {};
   var LCOEs_exist = {};
   var metrics_new = {};
@@ -1096,9 +1019,6 @@ function getTechDataForYear(inputs, year, gen_by_tech, tot_load, gas_price, CO2_
     if(inputs.metric_comp == 'PLCOE' && value_factor <= 0) { continue;}
 
     var LCOE_exist = interpolateInputYear(inputs.LCOE_exist[tech], inputs, year);
-
-    //Add NG fuel cost to LCOE
-    LCOE_exist += gas_price * inputs.NG_heatrate[tech];
     //Add CO2 cost to LCOE
     LCOE_exist += CO2_price * inputs.CO2_emission[tech];
     //Save LCOEs[tech] for output
@@ -1110,7 +1030,6 @@ function getTechDataForYear(inputs, year, gen_by_tech, tot_load, gas_price, CO2_
     if (tech in inputs.LCOE_new){
       var LCOE_new = interpolateInputYear(inputs.LCOE_new[tech], inputs, year);
       LCOE_new += inputs.LCOE_slope[tech] * gen_by_tech[tech]/1000;
-      LCOE_new += gas_price * inputs.NG_heatrate[tech];
       LCOE_new += CO2_price * inputs.CO2_emission[tech];
       LCOEs_new[tech] = LCOE_new;
 
@@ -1255,8 +1174,6 @@ $('#download-data').click(function(){
   rows.push(['Load (TWh/yr)', ''].concat(outputs.tot_load_out))
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
   rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
-  rows.push(['Gas Price (2018$/MMBtu)', ''].concat(outputs.gas_price_out))
-  rows.push(['Gas Use (Quads)', ''].concat(outputs.gas_use_out))
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
