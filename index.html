@@ -290,7 +290,7 @@ var inputs = {
     Gas_CCS: '0.65 - 0.22*x',
     Wind_Ons: '0.62 - 0.77*x',
     Wind_Ofs: '0.61 - 1.22*x',
-    PV: '0.87 - 1.9*x', //Future non-linear examples: 0.87 - 1.9*x + 0.4*x^2
+    PV: '1.12*(1 - x)^4.72', //Non-linear fit to upv gen_frac vs value_cost_factor in valcostfac_core.csv
     Geothermal: '0.7 - 0.8*x',
     Other: '1',
   },
