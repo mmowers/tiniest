@@ -180,15 +180,15 @@ h5{
 <script>
 "use strict";
 var inputs = {
-  num_time_steps: 4, //This means we have 4 input entries covering start year to end year, meaning 2020, 2030, 2040, 2050.
+  num_time_steps: 6, //This means we have 6 input entries covering start year to end year, meaning 2025, 2030, 2035, 2040, 2045, 2050.
   num_tiny_steps: 50, //Number of energy-dispatch steps solved within each year
   tiny_step_pct_end: 0.1, //Final dispatch step size as percent of annual load; start step is computed to make total 100%, assuming linear spacing between start and end.
-  start_year: 2020,
+  start_year: 2025,
   end_year: 2050,
   CRF: .07,
   metric_comp: 'PLCOE', //'LCOE' is levelized cost of electricity, 'SLCOE' is system LCOE, 'PLCOE' is profitability-adjusted LCOE.
   cost_basis: 'LCOE', //Use either 'LCOE' to base costs on LCOE alone, 'metric_comp' to base costs on the metric of competition, or 'mixed' to use LCOE for existing and metric_comp for new techs.
-  load: [3961, 4363, 4764, 5317], //TWh per year, 2020 adjusted to be equal to existing gen
+  load: [4162, 4363, 4563.5, 4764, 5040.5, 5317], //TWh per year, defaults at 2025/2030/2035/2040/2045/2050
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind_Ons', 'Wind_Ofs','PV', 'Other'],
   colors: {
     Nuclear: '#820000',
@@ -200,24 +200,24 @@ var inputs = {
     PV: '#FFC903',
     Other: '#ff69b4',
   },
-  existing_gen: { //From ReEDS reference run, init, new1 and new2 techs. 2020 uses generation, and retirements of capacity scale this.
-    Nuclear: [770, 719, 598, 377],
-    Coal: [727, 551, 517, 312],
-    Gas_CC: [1563, 1539, 1515, 1432],
-    Gas_CCS: [0, 0, 0, 0],
-    Wind_Ons: [370, 360, 240, 0],
-    Wind_Ofs: [0, 0, 0, 0],
-    PV: [154, 154, 153, 0], //Utility and Distributed gen in 2020, but only utility scales capacity
-    Other: [377, 377, 377, 377], //Hydro and Other RE in 2020, constant over time
+  existing_gen: { //From ReEDS reference run, init, new1 and new2 techs.
+    Nuclear: [744.5, 719, 658.5, 598, 487.5, 377],
+    Coal: [639, 551, 534, 517, 414.5, 312],
+    Gas_CC: [1551, 1539, 1527, 1515, 1473.5, 1432],
+    Gas_CCS: [0, 0, 0, 0, 0, 0],
+    Wind_Ons: [365, 360, 300, 240, 120, 0],
+    Wind_Ofs: [0, 0, 0, 0, 0, 0],
+    PV: [154, 154, 153.5, 153, 76.5, 0], //Utility and Distributed gen basis
+    Other: [377, 377, 377, 377, 377, 377], //Hydro and Other RE held constant
   },
   LCOE_new: { //2022$/MWh, ATB 2020 Moderate converted from 2018$ using CPI-U factor 1.16546
-    Nuclear: [87.41, 85.08, 81.58, 76.92],
-    Coal: [83.91, 81.58, 80.42, 78.09], //High CF
-    Gas_CC: [31.47, 38.46, 37.29, 37.29], //High CF, includes fuel
-    Gas_CCS: [53.61, 60.60, 58.27, 57.11], //High CF, includes fuel
-    Wind_Ons: [36.13, 29.14, 26.81, 23.31], //class 4
-    Wind_Ofs: [94.40, 61.77, 52.45, 46.62], //class 4
-    PV: [33.80, 20.98, 18.65, 16.32], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
+    Nuclear: [86.245, 85.08, 83.33, 81.58, 79.25, 76.92],
+    Coal: [82.745, 81.58, 81.00, 80.42, 79.255, 78.09], //High CF
+    Gas_CC: [34.965, 38.46, 37.875, 37.29, 37.29, 37.29], //High CF, includes fuel
+    Gas_CCS: [57.105, 60.60, 59.435, 58.27, 57.69, 57.11], //High CF, includes fuel
+    Wind_Ons: [32.635, 29.14, 27.975, 26.81, 25.06, 23.31], //class 4
+    Wind_Ofs: [78.085, 61.77, 57.11, 52.45, 49.535, 46.62], //class 4
+    PV: [27.39, 20.98, 19.815, 18.65, 17.485, 16.32], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
   // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
   //   Nuclear: [80, 76, 73, 70],
@@ -229,14 +229,14 @@ var inputs = {
   //   PV: [35, 19, 17, 15], //class 5, with 10% ITC.
   // },
   LCOE_exist: { //2022$/MWh, ATB 2020 Moderate converted from 2018$, fixed and variable costs, kept constant though.
-    Nuclear: [27.97, 27.97, 27.97, 27.97],
-    Coal: [30.30, 30.30, 30.30, 30.30], //High CF
-    Gas_CC: [22.14, 30.30, 29.14, 29.14], //High CF, includes fuel
-    Gas_CCS: [30.30, 40.79, 39.63, 39.63], //High CF, includes fuel
-    Wind_Ons: [10.49, 10.49, 10.49, 10.49], //class 4
-    Wind_Ofs: [17.48, 17.48, 17.48, 17.48], //class 4
-    PV: [8.16, 8.16, 8.16, 8.16], //Kansas City
-    Other: [0, 0, 0, 0],
+    Nuclear: [27.97, 27.97, 27.97, 27.97, 27.97, 27.97],
+    Coal: [30.30, 30.30, 30.30, 30.30, 30.30, 30.30], //High CF
+    Gas_CC: [26.22, 30.30, 29.72, 29.14, 29.14, 29.14], //High CF, includes fuel
+    Gas_CCS: [35.545, 40.79, 40.21, 39.63, 39.63, 39.63], //High CF, includes fuel
+    Wind_Ons: [10.49, 10.49, 10.49, 10.49, 10.49, 10.49], //class 4
+    Wind_Ofs: [17.48, 17.48, 17.48, 17.48, 17.48, 17.48], //class 4
+    PV: [8.16, 8.16, 8.16, 8.16, 8.16, 8.16], //Kansas City
+    Other: [0, 0, 0, 0, 0, 0],
   },
   // LCOE_exist: { //2022$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
   //   Nuclear: [10, 10, 10, 10],
