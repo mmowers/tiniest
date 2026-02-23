@@ -290,7 +290,7 @@ var inputs = {
     Gas_CCS: '0.65 - 0.22*x',
     Wind_Ons: '0.62 - 0.77*x',
     Wind_Ofs: '0.61 - 1.22*x',
-    PV: '1.2*(1 - x)^5.43', //Power fit with intercept constrained to 1.2 and calibrated on low-share upv points (gen_frac <= 0.20)
+    PV: '1.2*(1 - x)^5.22', //Power fit calibrated on upv points with market share under 30% (gen_frac < 0.30)
     Geothermal: '0.7 - 0.8*x',
     Other: '1',
   },
