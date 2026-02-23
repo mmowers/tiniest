@@ -242,14 +242,14 @@ var inputs = {
     PV: [154, 154, 154, 153, 77, 0], //Utility and Distributed gen basis
     Other: [377, 377, 377, 377, 377, 377], //Hydro and Other RE held constant
   },
-  LCOE_new: { //2022$/MWh, ATB 2020 Moderate converted from 2018$ using CPI-U factor 1.16546
-    Nuclear: [86, 85, 83, 82, 79, 77],
-    Coal: [83, 82, 81, 80, 79, 78], //High CF
-    Gas_CC: [35, 38, 38, 37, 37, 37], //High CF, includes fuel
-    Gas_CCS: [57, 61, 59, 58, 58, 57], //High CF, includes fuel
-    Wind_Ons: [33, 29, 28, 27, 25, 23], //class 4
-    Wind_Ofs: [78, 62, 57, 52, 50, 47], //class 4
-    PV: [27, 21, 20, 19, 17, 16], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
+  LCOE_new: { //2022$/MWh ATB 2024 Moderate
+    Nuclear: [84, 84, 82, 76, 72, 67],
+    Coal: [70, 67, 65, 63, 61, 59], //High CF
+    Gas_CC: [42, 36, 38, 39, 38, 37], //High CF, includes fuel
+    Gas_CCS: [64, 54, 53, 54, 52, 50], //High CF, includes fuel
+    Wind_Ons: [31, 27, 25, 24, 23, 21], //class 4
+    Wind_Ofs: [109, 85, 68, 65, 63, 61], //class 4
+    PV: [45, 35, 26, 24, 22, 20], //UPV
   },
   // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
   //   Nuclear: [80, 76, 73, 70],
@@ -260,14 +260,14 @@ var inputs = {
   //   Wind_Ofs: [75, 51, 43, 39], //class 3
   //   PV: [35, 19, 17, 15], //class 5, with 10% ITC.
   // },
-  LCOE_exist: { //2022$/MWh, ATB 2020 Moderate converted from 2018$, fixed and variable costs, kept constant though.
-    Nuclear: [28, 28, 28, 28, 28, 28],
-    Coal: [30, 30, 30, 30, 30, 30], //High CF
-    Gas_CC: [26, 30, 30, 29, 29, 29], //High CF, includes fuel
-    Gas_CCS: [36, 41, 40, 40, 40, 40], //High CF, includes fuel
-    Wind_Ons: [10, 10, 10, 10, 10, 10], //class 4
-    Wind_Ofs: [17, 17, 17, 17, 17, 17], //class 4
-    PV: [8, 8, 8, 8, 8, 8], //Kansas City
+  LCOE_exist: { //2022$/MWh, ATB 2024 Moderate.
+    Nuclear: [34, 34, 34, 34, 34, 34],
+    Coal: [38, 37, 37, 37, 36, 36], //High CF
+    Gas_CC: [31, 26, 29, 31, 31, 30], //High CF, includes fuel
+    Gas_CCS: [42, 36, 40, 42, 42, 41], //High CF, includes fuel
+    Wind_Ons: [8, 7, 7, 6, 6, 6], //class 4
+    Wind_Ofs: [21, 19, 18, 17, 17, 16], //class 4
+    PV: [9, 7, 6, 6, 5, 5], //Kansas City
     Other: [0, 0, 0, 0, 0, 0],
   },
   // LCOE_exist: { //2022$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
@@ -308,7 +308,7 @@ var inputs = {
     Other: 0,
   },
   CO2_price: { //2022 dollars per metric ton
-    start_year: 2022,
+    start_year: 2025,
     start_level: 0,
     escalation: 1.05,
   },
