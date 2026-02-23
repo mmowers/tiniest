@@ -93,7 +93,7 @@ h5{
         </div>
         <!-- New tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
-          New Technology LCOE at 0% market share (2018$/MWh)
+          New Technology LCOE at 0% market share (2022$/MWh)
         </h5>
         <div id="LCOE_new-div" class="collapse">
           <table id="LCOE_new-table" class="table table-sm table-striped">
@@ -102,7 +102,7 @@ h5{
         </div>
         <!-- Existing tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
-          Existing Technology LCOE at 0% market share (2018$/MWh)
+          Existing Technology LCOE at 0% market share (2022$/MWh)
         </h5>
         <div id="LCOE_exist-div" class="collapse">
           <table id="LCOE_exist-table" class="table table-sm table-striped">
@@ -129,7 +129,7 @@ h5{
         </div>
         <!-- CO2 Price -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#CO2_price-div" aria-expanded="false" aria-controls="CO2_price-div">
-          CO2 Price (2018$ per metric ton)
+          CO2 Price (2022$ per metric ton)
         </h5>
         <div id="CO2_price-div" class="collapse">
           <table id="CO2_price-table" class="table table-sm table-striped">
@@ -210,14 +210,14 @@ var inputs = {
     PV: [154, 154, 153, 0], //Utility and Distributed gen in 2020, but only utility scales capacity
     Other: [377, 377, 377, 377], //Hydro and Other RE in 2020, constant over time
   },
-  LCOE_new: { //2018$/MWh, ATB 2020 Moderate
-    Nuclear: [75, 73, 70, 66],
-    Coal: [72, 70, 69, 67], //High CF
-    Gas_CC: [27, 33, 32, 32], //High CF, includes fuel
-    Gas_CCS: [46, 52, 50, 49], //High CF, includes fuel
-    Wind_Ons: [31, 25, 23, 20], //class 4
-    Wind_Ofs: [81, 53, 45, 40], //class 4
-    PV: [29, 18, 16, 14], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
+  LCOE_new: { //2022$/MWh, ATB 2020 Moderate converted from 2018$ using CPI-U factor 1.16546
+    Nuclear: [87.41, 85.08, 81.58, 76.92],
+    Coal: [83.91, 81.58, 80.42, 78.09], //High CF
+    Gas_CC: [31.47, 38.46, 37.29, 37.29], //High CF, includes fuel
+    Gas_CCS: [53.61, 60.60, 58.27, 57.11], //High CF, includes fuel
+    Wind_Ons: [36.13, 29.14, 26.81, 23.31], //class 4
+    Wind_Ofs: [94.40, 61.77, 52.45, 46.62], //class 4
+    PV: [33.80, 20.98, 18.65, 16.32], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
   // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
   //   Nuclear: [80, 76, 73, 70],
@@ -228,17 +228,17 @@ var inputs = {
   //   Wind_Ofs: [75, 51, 43, 39], //class 3
   //   PV: [35, 19, 17, 15], //class 5, with 10% ITC.
   // },
-  LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, fixed and variable costs, kept constant though.
-    Nuclear: [24, 24, 24, 24],
-    Coal: [26, 26, 26, 26], //High CF
-    Gas_CC: [19, 26, 25, 25], //High CF, includes fuel
-    Gas_CCS: [26, 35, 34, 34], //High CF, includes fuel
-    Wind_Ons: [9, 9, 9, 9], //class 4
-    Wind_Ofs: [15, 15, 15, 15], //class 4
-    PV: [7, 7, 7, 7], //Kansas City
+  LCOE_exist: { //2022$/MWh, ATB 2020 Moderate converted from 2018$, fixed and variable costs, kept constant though.
+    Nuclear: [27.97, 27.97, 27.97, 27.97],
+    Coal: [30.30, 30.30, 30.30, 30.30], //High CF
+    Gas_CC: [22.14, 30.30, 29.14, 29.14], //High CF, includes fuel
+    Gas_CCS: [30.30, 40.79, 39.63, 39.63], //High CF, includes fuel
+    Wind_Ons: [10.49, 10.49, 10.49, 10.49], //class 4
+    Wind_Ofs: [17.48, 17.48, 17.48, 17.48], //class 4
+    PV: [8.16, 8.16, 8.16, 8.16], //Kansas City
     Other: [0, 0, 0, 0],
   },
-  // LCOE_exist: { //2018$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
+  // LCOE_exist: { //2022$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
   //   Nuclear: [10, 10, 10, 10],
   //   Coal: [21, 21, 21, 21], //High CF
   //   Gas_CC: [2, 2, 2, 2], //High CF, no fuel
@@ -275,9 +275,9 @@ var inputs = {
     PV: 0,
     Other: 0,
   },
-  CO2_price: { //2018 dollars per metric ton
+  CO2_price: { //2022 dollars per metric ton
     start_year: 2022,
-    start_level: 0, //40 is our default carbon tax in ReEDS.
+    start_level: 0,
     escalation: 1.05,
   },
 };
@@ -1147,7 +1147,7 @@ $('#download-data').click(function(){
   var rows = [['',''].concat(outputs.year_labels)]
   rows.push(['Load (TWh/yr)', ''].concat(outputs.tot_load_out))
   rows.push(['CO2 Emissions (MMton/yr)', ''].concat(outputs.CO2_tot_out))
-  rows.push(['Elec Price (2018$/MWh)', ''].concat(outputs.elecprice_out))
+  rows.push(['Elec Price (2022$/MWh)', ''].concat(outputs.elecprice_out))
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
