@@ -48,6 +48,38 @@ h5{
 #github-link{
   margin-top: 20px;
 }
+#existing_gen-table,
+#LCOE_new-table,
+#LCOE_exist-table{
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.85rem;
+}
+#existing_gen-table th,
+#existing_gen-table td,
+#LCOE_new-table th,
+#LCOE_new-table td,
+#LCOE_exist-table th,
+#LCOE_exist-table td{
+  padding: 0.2rem 0.25rem;
+  white-space: nowrap;
+}
+#existing_gen-table th:first-child,
+#existing_gen-table td:first-child,
+#LCOE_new-table th:first-child,
+#LCOE_new-table td:first-child,
+#LCOE_exist-table th:first-child,
+#LCOE_exist-table td:first-child{
+  width: 90px;
+}
+#existing_gen-table input,
+#LCOE_new-table input,
+#LCOE_exist-table input{
+  width: 44px;
+  min-width: 0;
+  padding: 0.1rem 0.2rem;
+  font-size: 0.8rem;
+}
 
 </style>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -93,7 +125,7 @@ h5{
         </div>
         <!-- New tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_new-div" aria-expanded="false" aria-controls="LCOE_new-div">
-          New Technology LCOE at 0% market share (2022$/MWh)
+          New Technology LCOE (2022$/MWh)
         </h5>
         <div id="LCOE_new-div" class="collapse">
           <table id="LCOE_new-table" class="table table-sm table-striped">
@@ -102,7 +134,7 @@ h5{
         </div>
         <!-- Existing tech LCOE -->
         <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#LCOE_exist-div" aria-expanded="false" aria-controls="LCOE_exist-div">
-          Existing Technology LCOE at 0% market share (2022$/MWh)
+          Existing Technology LCOE (2022$/MWh)
         </h5>
         <div id="LCOE_exist-div" class="collapse">
           <table id="LCOE_exist-table" class="table table-sm table-striped">
@@ -188,7 +220,7 @@ var inputs = {
   CRF: .07,
   metric_comp: 'PLCOE', //'LCOE' is levelized cost of electricity, 'SLCOE' is system LCOE, 'PLCOE' is profitability-adjusted LCOE.
   cost_basis: 'LCOE', //Use either 'LCOE' to base costs on LCOE alone, 'metric_comp' to base costs on the metric of competition, or 'mixed' to use LCOE for existing and metric_comp for new techs.
-  load: [4162, 4363, 4563.5, 4764, 5040.5, 5317], //TWh per year, defaults at 2025/2030/2035/2040/2045/2050
+  load: [4162, 4363, 4564, 4764, 5041, 5317], //TWh per year, defaults at 2025/2030/2035/2040/2045/2050
   full_techs: ['Nuclear', 'Coal', 'Gas_CC', 'Gas_CCS', 'Wind_Ons', 'Wind_Ofs','PV', 'Other'],
   colors: {
     Nuclear: '#820000',
@@ -201,23 +233,23 @@ var inputs = {
     Other: '#ff69b4',
   },
   existing_gen: { //From ReEDS reference run, init, new1 and new2 techs.
-    Nuclear: [744.5, 719, 658.5, 598, 487.5, 377],
-    Coal: [639, 551, 534, 517, 414.5, 312],
-    Gas_CC: [1551, 1539, 1527, 1515, 1473.5, 1432],
+    Nuclear: [745, 719, 659, 598, 488, 377],
+    Coal: [639, 551, 534, 517, 415, 312],
+    Gas_CC: [1551, 1539, 1527, 1515, 1474, 1432],
     Gas_CCS: [0, 0, 0, 0, 0, 0],
     Wind_Ons: [365, 360, 300, 240, 120, 0],
     Wind_Ofs: [0, 0, 0, 0, 0, 0],
-    PV: [154, 154, 153.5, 153, 76.5, 0], //Utility and Distributed gen basis
+    PV: [154, 154, 154, 153, 77, 0], //Utility and Distributed gen basis
     Other: [377, 377, 377, 377, 377, 377], //Hydro and Other RE held constant
   },
   LCOE_new: { //2022$/MWh, ATB 2020 Moderate converted from 2018$ using CPI-U factor 1.16546
-    Nuclear: [86.245, 85.08, 83.33, 81.58, 79.25, 76.92],
-    Coal: [82.745, 81.58, 81.00, 80.42, 79.255, 78.09], //High CF
-    Gas_CC: [34.965, 38.46, 37.875, 37.29, 37.29, 37.29], //High CF, includes fuel
-    Gas_CCS: [57.105, 60.60, 59.435, 58.27, 57.69, 57.11], //High CF, includes fuel
-    Wind_Ons: [32.635, 29.14, 27.975, 26.81, 25.06, 23.31], //class 4
-    Wind_Ofs: [78.085, 61.77, 57.11, 52.45, 49.535, 46.62], //class 4
-    PV: [27.39, 20.98, 19.815, 18.65, 17.485, 16.32], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
+    Nuclear: [86, 85, 83, 82, 79, 77],
+    Coal: [83, 82, 81, 80, 79, 78], //High CF
+    Gas_CC: [35, 38, 38, 37, 37, 37], //High CF, includes fuel
+    Gas_CCS: [57, 61, 59, 58, 58, 57], //High CF, includes fuel
+    Wind_Ons: [33, 29, 28, 27, 25, 23], //class 4
+    Wind_Ofs: [78, 62, 57, 52, 50, 47], //class 4
+    PV: [27, 21, 20, 19, 17, 16], //Kansas City, with 10% ITC. Without ITC would be [31, 18, 16, 14]
   },
   // LCOE_new: { //2019$/MWh, ATB 2021 Moderate (corrected version 2021-08-12)
   //   Nuclear: [80, 76, 73, 70],
@@ -229,13 +261,13 @@ var inputs = {
   //   PV: [35, 19, 17, 15], //class 5, with 10% ITC.
   // },
   LCOE_exist: { //2022$/MWh, ATB 2020 Moderate converted from 2018$, fixed and variable costs, kept constant though.
-    Nuclear: [27.97, 27.97, 27.97, 27.97, 27.97, 27.97],
-    Coal: [30.30, 30.30, 30.30, 30.30, 30.30, 30.30], //High CF
-    Gas_CC: [26.22, 30.30, 29.72, 29.14, 29.14, 29.14], //High CF, includes fuel
-    Gas_CCS: [35.545, 40.79, 40.21, 39.63, 39.63, 39.63], //High CF, includes fuel
-    Wind_Ons: [10.49, 10.49, 10.49, 10.49, 10.49, 10.49], //class 4
-    Wind_Ofs: [17.48, 17.48, 17.48, 17.48, 17.48, 17.48], //class 4
-    PV: [8.16, 8.16, 8.16, 8.16, 8.16, 8.16], //Kansas City
+    Nuclear: [28, 28, 28, 28, 28, 28],
+    Coal: [30, 30, 30, 30, 30, 30], //High CF
+    Gas_CC: [26, 30, 30, 29, 29, 29], //High CF, includes fuel
+    Gas_CCS: [36, 41, 40, 40, 40, 40], //High CF, includes fuel
+    Wind_Ons: [10, 10, 10, 10, 10, 10], //class 4
+    Wind_Ofs: [17, 17, 17, 17, 17, 17], //class 4
+    PV: [8, 8, 8, 8, 8, 8], //Kansas City
     Other: [0, 0, 0, 0, 0, 0],
   },
   // LCOE_exist: { //2022$/MWh, ATB 2020 Moderate, only variable costs, kept constant though.
@@ -332,7 +364,7 @@ for (var tech of inputs.full_techs){
   //Existing gen
   var existing_gen_str = '<tr><td>' + tech + '</td>';
   for (var i = 0; i < inputs.num_time_steps; i++){
-    existing_gen_str += '<td><input type="text" size="6" id="existing_gen-' + tech + '-' + i + '" value="' + inputs.existing_gen[tech][i]+ '"></td>';
+    existing_gen_str += '<td><input type="text" size="4" id="existing_gen-' + tech + '-' + i + '" value="' + inputs.existing_gen[tech][i]+ '"></td>';
   }
   existing_gen_str += '</tr>';
   $('#existing_gen-table').append(existing_gen_str);
@@ -340,7 +372,7 @@ for (var tech of inputs.full_techs){
     //New tech LCOE
     var lcoe_new_str = '<tr><td>' + tech + '</td>';
     for (var i = 0; i < inputs.num_time_steps; i++){
-      lcoe_new_str += '<td><input type="text" size="6" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
+      lcoe_new_str += '<td><input type="text" size="4" id="LCOE_new-' + tech + '-' + i + '" value="' + inputs.LCOE_new[tech][i]+ '"></td>';
     }
     lcoe_new_str += '</tr>';
     $('#LCOE_new-table').append(lcoe_new_str);
@@ -349,7 +381,7 @@ for (var tech of inputs.full_techs){
     //Existing tech LCOE
     var lcoe_exist_str = '<tr><td>' + tech + '</td>';
     for (var i = 0; i < inputs.num_time_steps; i++){
-      lcoe_exist_str += '<td><input type="text" size="6" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
+      lcoe_exist_str += '<td><input type="text" size="4" id="LCOE_exist-' + tech + '-' + i + '" value="' + inputs.LCOE_exist[tech][i]+ '"></td>';
     }
     lcoe_exist_str += '</tr>';
     $('#LCOE_exist-table').append(lcoe_exist_str);
