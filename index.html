@@ -147,7 +147,7 @@ h5{
         </h5>
         <div id="value_factor-div" class="collapse">
           <table id="value_factor-table" class="table table-sm table-striped">
-            <tr id="value_factor-header"><th>Tech</th><th>y-intercept</th><th>slope</th></tr>
+            <tr id="value_factor-header"><th>Tech</th><th>Equation y = f(x)</th></tr>
           </table>
         </div>
         <!-- CO2 Emissions -->
@@ -279,15 +279,15 @@ var inputs = {
   //   Wind_Ofs: [0, 0, 0, 0],
   //   PV: [0, 0, 0, 0],
   // },
-  value_factor: { //VF vs market share fraction, y-intercept and slope, based on reeds results.
-    Nuclear: [.76, -.09],
-    Coal: [.79, -.27], //copied from the others
-    Gas_CC: [.96, -.40],
-    Gas_CCS: [.65, -.22],
-    Wind_Ons: [.62, -.77],
-    Wind_Ofs: [.61, -1.22],
-    PV: [0.87, -1.9], //Advanced battery: , Conservative battery:
-    Other: [1, 0],
+  value_factor: { //VF equation with x as market share fraction.
+    Nuclear: '0.76 - 0.09*x',
+    Coal: '0.79 - 0.27*x',
+    Gas_CC: '0.96 - 0.40*x',
+    Gas_CCS: '0.65 - 0.22*x',
+    Wind_Ons: '0.62 - 0.77*x',
+    Wind_Ofs: '0.61 - 1.22*x',
+    PV: '0.87 - 1.9*x', //Future non-linear examples: 0.87 - 1.9*x + 0.4*x^2
+    Other: '1',
   },
   // value_factor: { //carbon tax cases
   //   Nuclear: [1.03, -.22],
@@ -331,7 +331,12 @@ for (var key in urlData){
       inputs[arr[0]][arr[1]] = urlData[key];
     }
   }
-  else if(arr.length == 3 && arr[0] in inputs && arr[1] in inputs[arr[0]] && arr[2] in inputs[arr[0]][arr[1]]){
+  else if(arr.length == 3 &&
+          arr[0] in inputs &&
+          arr[1] in inputs[arr[0]] &&
+          typeof inputs[arr[0]][arr[1]] == 'object' &&
+          inputs[arr[0]][arr[1]] !== null &&
+          arr[2] in inputs[arr[0]][arr[1]]){
     if(isNumeric(urlData[key])){
       inputs[arr[0]][arr[1]][arr[2]] = Number(urlData[key]);
     }else{
@@ -388,9 +393,7 @@ for (var tech of inputs.full_techs){
   if (tech in inputs.value_factor){
     //Value Factor
     var vf_str = '<tr><td>' + tech + '</td>';
-    for (var i = 0; i < 2; i++){
-      vf_str += '<td><input type="text" size="6" id="value_factor-' + tech + '-' + i + '" value="' + inputs.value_factor[tech][i]+ '"></td>';
-    }
+    vf_str += '<td><input type="text" size="16" id="value_factor-' + tech + '" value="' + inputs.value_factor[tech] + '"></td>';
     vf_str += '</tr>';
     $('#value_factor-table').append(vf_str);
   }
@@ -1009,6 +1012,24 @@ function getMetricFromLCOE(inputs, LCOE, value_factor, elecprice){
   return LCOE;
 }
 
+function evaluateValueFactorExpression(expression, x){
+  var expr = String(expression || '').trim();
+  if (expr.length == 0){
+    return NaN;
+  }
+  // Allow only arithmetic expressions with x and parentheses.
+  if (!/^[0-9xX+\-*/().\s^]*$/.test(expr)){
+    return NaN;
+  }
+  var js_expr = expr.replace(/X/g, 'x').replace(/\^/g, '**');
+  try{
+    var value = Function('x', '"use strict"; return (' + js_expr + ');')(x);
+    return Number(value);
+  } catch (err){
+    return NaN;
+  }
+}
+
 function getTechDataForYear(inputs, year, gen_by_tech, tot_load, CO2_price, elecprice){
   var LCOEs_new = {};
   var LCOEs_exist = {};
@@ -1019,8 +1040,9 @@ function getTechDataForYear(inputs, year, gen_by_tech, tot_load, CO2_price, elec
     if (tot_load > 0){
       tech_penetration = gen_by_tech[tech]/tot_load;
     }
-    //calculate value factor at this market share, y = mx + b
-    var value_factor = inputs.value_factor[tech][1]*tech_penetration + inputs.value_factor[tech][0];
+    // Calculate value factor from user equation with x as market share.
+    var value_factor = evaluateValueFactorExpression(inputs.value_factor[tech], tech_penetration);
+    if (!Number.isFinite(value_factor)) { continue; }
     //If value is zero or negative, don't consider this tech
     if(inputs.metric_comp == 'PLCOE' && value_factor <= 0) { continue;}
 
