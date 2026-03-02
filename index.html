@@ -115,9 +115,7 @@ h5{
           </table>
         </div>
         <!-- Existing Gen -->
-        <h5 class="input-header" data-bs-toggle="collapse" data-bs-target="#existing_gen-div" aria-expanded="false" aria-controls="existing_gen-div">
-          Existing Tech Generation (TWh/yr, including planned retirements)
-        </h5>
+        <h5 id="existing-gen-title" class="input-header" data-bs-toggle="collapse" data-bs-target="#existing_gen-div" aria-expanded="false" aria-controls="existing_gen-div"></h5>
         <div id="existing_gen-div" class="collapse">
           <table id="existing_gen-table" class="table table-sm table-striped">
             <tr id="existing_gen-header"><th>Tech</th></tr>
@@ -355,6 +353,8 @@ var years = []
 for (var i = 0; i < inputs.num_time_steps; i++) { //i is the index of the large time steps, and note that the final time step is the end
   years.push(inputs.start_year + i*(inputs.end_year - inputs.start_year)/(inputs.num_time_steps-1));
 }
+
+$('#existing-gen-title').text('Gen from techs built pre-' + inputs.start_year + ' (TWh/yr, incl. planned retire)');
 
 for (var year of years){
   $('#load-header').append('<th>' + year + '</th>');
@@ -761,8 +761,8 @@ function runTiniest(inputs) {
   var decision_block_tech_out = [];
   var decision_block_kind_out = [];
   var decision_block_metric_out = [];
-  var tech_gen_exist_out = {}; //Generation from techs built before 2020
-  var tech_gen_future_out = {}; //Generation from techs built after 2020
+  var tech_gen_exist_out = {}; //Generation from techs built before start year
+  var tech_gen_future_out = {}; //Generation from techs built in or after start year
   var tech_cost_out = {};
   var metrics_new_out = {};
   var metrics_exist_out = {};
@@ -1211,10 +1211,10 @@ $('#download-data').click(function(){
     rows.push(['Gen (TWh/yr)', tech].concat(outputs.tech_gen_out[tech]))
   });
   inputs.full_techs.forEach(function(tech, index, array){
-    rows.push(['Gen pre-2020 techs (TWh/yr)', tech].concat(outputs.tech_gen_exist_out[tech]))
+    rows.push(['Gen techs built before ' + inputs.start_year + ' (TWh/yr)', tech].concat(outputs.tech_gen_exist_out[tech]))
   });
   inputs.full_techs.forEach(function(tech, index, array){
-    rows.push(['Gen post-2020 techs (TWh/yr)', tech].concat(outputs.tech_gen_future_out[tech]))
+    rows.push(['Gen techs built in/after ' + inputs.start_year + ' (TWh/yr)', tech].concat(outputs.tech_gen_future_out[tech]))
   });
   inputs.full_techs.forEach(function(tech, index, array){
     rows.push(['Cost (Bil $/yr)', tech].concat(outputs.tech_cost_out[tech]))
