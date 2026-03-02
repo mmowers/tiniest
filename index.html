@@ -190,6 +190,9 @@ h5{
         <canvas id="generationChart"></canvas>
       </div>
       <div class="chart-container">
+        <canvas id="generationCohortChart"></canvas>
+      </div>
+      <div class="chart-container">
         <canvas id="elecpriceChart"></canvas>
       </div>
       <div class="chart-container">
@@ -444,6 +447,20 @@ function getChartZoomPluginOptions(mode){
   };
 }
 
+function hexToRgba(hex, alpha){
+  var normalized = String(hex || '').replace('#', '').trim();
+  if (normalized.length === 3){
+    normalized = normalized[0] + normalized[0] + normalized[1] + normalized[1] + normalized[2] + normalized[2];
+  }
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)){
+    return hex;
+  }
+  var r = parseInt(normalized.substring(0, 2), 16);
+  var g = parseInt(normalized.substring(2, 4), 16);
+  var b = parseInt(normalized.substring(4, 6), 16);
+  return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + alpha + ')';
+}
+
 //Generation Chart. Start with existing gen here so that we can update as we go
 var tech_gen_datasets = [];
 for (var tech of inputs.full_techs){
@@ -489,6 +506,7 @@ var gen_config_out = {
     plugins: {
       legend: {
         position: 'right',
+        reverse: true,
       },
       zoom: getChartZoomPluginOptions('xy'),
     },
@@ -497,6 +515,78 @@ var gen_config_out = {
 var generationChart = new Chart(
   document.getElementById('generationChart'),
   gen_config_out,
+);
+
+var tech_gen_cohort_datasets = [];
+for (var tech of inputs.full_techs){
+  var base_color = inputs.colors[tech];
+  tech_gen_cohort_datasets.push({
+    label: tech + ' (pre-' + inputs.start_year + ')',
+    data: [inputs.existing_gen[tech][0]],
+    borderColor: base_color,
+    backgroundColor: hexToRgba(base_color, 0.70),
+    stack: 'generation_cohort',
+  });
+  tech_gen_cohort_datasets.push({
+    label: tech + ' (' + inputs.start_year + '+)',
+    data: [0],
+    borderColor: base_color,
+    backgroundColor: hexToRgba(base_color, 0.95),
+    stack: 'generation_cohort',
+  });
+}
+
+var gen_cohort_data_out = {
+  labels: [inputs.start_year],
+  datasets: tech_gen_cohort_datasets,
+};
+var gen_cohort_config_out = {
+  type: 'bar',
+  data: gen_cohort_data_out,
+  options: {
+    scales: {
+      x: {
+        type: 'linear',
+        stacked: true,
+        min: inputs.start_year,
+        max: inputs.end_year,
+        ticks: {
+          callback: function(value, index, values) {
+            return value.toString().replace(",", "");
+          },
+        },
+      },
+      y: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Generation by Build Cohort (TWh/yr)',
+          font: {
+            weight: 'bold',
+          },
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        position: 'right',
+        reverse: true,
+        labels: {
+          boxWidth: 10,
+          boxHeight: 10,
+          padding: 4,
+          font: {
+            size: 9,
+          },
+        },
+      },
+      zoom: getChartZoomPluginOptions('xy'),
+    },
+  },
+};
+var generationCohortChart = new Chart(
+  document.getElementById('generationCohortChart'),
+  gen_cohort_config_out,
 );
 
 var gen_decision_data_out = {
@@ -624,6 +714,7 @@ var cost_config_out = {
     plugins: {
       legend: {
         position: 'right',
+        reverse: true,
       },
       zoom: getChartZoomPluginOptions('xy'),
     },
@@ -741,7 +832,7 @@ var elecpriceChart = new Chart(
   elecprice_config_out,
 );
 
-var zoomable_charts = [generationChart, generationDecisionChart, costChart, CO2Chart, elecpriceChart];
+var zoomable_charts = [generationChart, generationCohortChart, generationDecisionChart, costChart, CO2Chart, elecpriceChart];
 for (var i = 0; i < zoomable_charts.length; i++){
   (function(chart){
     chart.canvas.addEventListener('dblclick', function(){
@@ -1092,11 +1183,14 @@ function getBestChoice(tech_data, rem_exist_legacy, rem_exist_future, energy_eps
 
 function updateCharts(outputs){
   generationChart.data.labels = outputs.year_labels;
+  generationCohortChart.data.labels = outputs.year_labels;
   generationDecisionChart.data.labels = outputs.year_labels.map(String);
   costChart.data.labels = outputs.year_labels;
   for(var n = 0; n < inputs.full_techs.length; n++){
     var tech = inputs.full_techs[n];
     generationChart.data.datasets[n].data = outputs.tech_gen_out[tech];
+    generationCohortChart.data.datasets[2*n].data = outputs.tech_gen_exist_out[tech];
+    generationCohortChart.data.datasets[2*n + 1].data = outputs.tech_gen_future_out[tech];
     costChart.data.datasets[n].data = outputs.tech_cost_out[tech];
   }
   var max_decision_blocks = 0;
@@ -1146,6 +1240,7 @@ function updateCharts(outputs){
   }
   generationDecisionChart.data.datasets = decision_datasets;
   generationChart.update() //it didn't seem to work to update within runTiniest(), perhaps because it was updating too fast.
+  generationCohortChart.update()
   generationDecisionChart.update()
   costChart.update()
   CO2Chart.data.labels = outputs.year_labels;
